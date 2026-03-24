@@ -66,7 +66,11 @@ FutureSearch discovered the compromise when LiteLLM was pulled as a transitive M
 
 ### 5. Response
 
-PyPI quarantined the entire litellm package, preventing downloads of all versions. Users reported that "All versions currently return 'No matching distribution found.'" The maintainer confirmed the quarantine but the initial GitHub issue (#24512) was closed and flooded with attacker-generated bot spam, suggesting the attacker attempted to suppress disclosure. A second tracking issue (#24518) was opened to maintain a clean timeline. [source: https://github.com/BerriAI/litellm/issues/24518]
+PyPI quarantined the entire litellm package, preventing downloads of all versions. Users reported that "All versions currently return 'No matching distribution found.'" The initial GitHub issue (#24512) was flooded with attacker-generated bot spam (342 comments, mostly noise like "Thanks, that helped!" and "Worked like a charm"), suggesting the attacker attempted to suppress disclosure. A second tracking issue (#24518) was opened to maintain a clean timeline. [source: https://github.com/BerriAI/litellm/issues/24518]
+
+The compromise extended beyond PyPI. The maintainer's GitHub account (`krrishdholakia`) was also compromised, with unauthorized commits appearing in unrelated repositories. BerriAI responded by deleting all maintainer accounts and migrating to new ones, rotating all GitHub, Docker, and PyPI keys, and issuing updates from a new account (`krrish-berri-2`). The compromised versions were deleted from PyPI and the package was subsequently unquarantined. [source: https://github.com/BerriAI/litellm/issues/24518, comments from krrish-berri-2 and akx]
+
+**Enterprise and containerized deployments were largely unaffected.** Organizations running LiteLLM via Docker (the standard approach for production API gateways) pull from a container registry (`ghcr.io`), not from PyPI. The Docker image was pinned to a version prior to 1.82.7, meaning the malicious code never reached containerized installs. This is a separate distribution chain from PyPI, and compromising it would require breaching BerriAI's container build pipeline, a significantly harder target. Enterprise LiteLLM gateways, university API proxies, and managed deployments running containers were not exposed to this attack. [source: https://github.com/BerriAI/litellm/issues/24518, comment from grenkoca]
 
 ### 6. TeamPCP: The Broader Campaign
 
