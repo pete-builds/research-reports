@@ -240,3 +240,11 @@ docker exec <container> pip show litellm
 - **Identity verification of new maintainer**: Partially resolved via HN cross-reference, but community raised deepfake concerns about photo-based verification. No GPG-signed or official channel verification yet
 - **Full scope of GitHub PAT compromise**: The attacker had access to the maintainer's GitHub account (confirmed via activity on `krrishdholakia/blockchain` and creation of `tpcp-docs` repo), but the full extent of actions taken with the PAT is not yet documented
 - **No new clean version published**: Latest on PyPI is still 1.82.6; latest GitHub release is v1.82.6.rc.2
+
+## How This Report Was Generated
+
+- Researched using Claude Code (Opus 4.6) with strict anti-hallucination guardrails
+- Sources gathered via SearXNG (self-hosted metasearch aggregating Bing, DuckDuckGo, Brave, Startpage, Reddit), then verified by reading each source directly
+- Every factual claim is cited inline; confidence levels flagged where evidence varies
+- No claims made without a verifiable source; gaps explicitly acknowledged
+- This report is actively monitored and updated every 30 minutes via an automated research loop that checks GitHub issues, PyPI, security advisories, and news sources for new developments
