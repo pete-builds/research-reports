@@ -6,7 +6,7 @@ updated: 2026-03-24T19:00:00Z
 summary: "On March 24, 2026, the LiteLLM Python package (versions 1.82.7 and 1.82.8) was compromised by threat actor TeamPCP via hijacked PyPI credentials, deploying a three-stage credential stealer that harvested SSH keys, cloud credentials, and crypto wallets from systems with ~95 million monthly downloads. This report analyzes the attack and compares it to the 2024 XZ Utils backdoor."
 ---
 
-> **Last updated: March 24, 2026, 12:35 PM ET.** Malicious versions removed, package unquarantined. PYSEC-2026-2 assigned. BerriAI incident report in progress.
+> **Last updated: March 24, 2026, 1:05 PM ET.** Malicious versions removed, package unquarantined. PYSEC-2026-2 assigned. At least one production environment confirmed compromised via Wiz alert. BerriAI incident report in progress.
 
 ## Findings
 
@@ -22,7 +22,7 @@ The attacker's access extended beyond the main litellm repo. Malicious code was 
 
 ### 2. Technical Analysis: The Three-Stage Payload
 
-**Version 1.82.7** embedded an obfuscated payload in `litellm/proxy/proxy_server.py`, triggered on import via a base64-decoded payload. The injected 12 lines sat between legitimate code blocks to avoid suspicious clustering. The attack used `subprocess.run()` instead of `exec()`, bypassing static analysis. [source: https://www.endorlabs.com/learn/teampcp-isnt-done]
+**Version 1.82.7** embedded an obfuscated payload in `litellm/proxy/proxy_server.py`, triggered on import via a base64-decoded payload. The injected 12 lines sat between legitimate code blocks to avoid suspicious clustering. The attack used `subprocess.run()` instead of `exec()`, bypassing static analysis. The attacker rebuilt the wheel with a regenerated RECORD file, so the RECORD entry for `proxy_server.py` contains the SHA-256 of the backdoored file. Standard integrity checks against the wheel's own metadata pass cleanly, which is why automated tooling did not catch the tampering. [source: https://www.endorlabs.com/learn/teampcp-isnt-done]
 
 **Version 1.82.8** (published 13 minutes later at 6:52 AM ET) escalated the attack by adding a `.pth` file named `litellm_init.pth` (34,628 bytes). Python's site module executes `.pth` files on every interpreter startup. Any line beginning with `import` is passed to `exec()`, meaning the malware ran on every Python process, even without importing LiteLLM. [source: https://safedep.io/malicious-litellm-1-82-8-analysis/]
 
@@ -48,6 +48,8 @@ The payload operated in three stages:
 - Featured a kill switch checking for "youtube.com" in responses
 - On Kubernetes clusters: created privileged pods named `node-setup-*` in `kube-system` namespace on every node, with `hostPID: True` and `hostNetwork: True`, mounting the host filesystem and using `chroot` to install persistence directly on each node's root filesystem
 [source: https://safedep.io/malicious-litellm-1-82-8-analysis/, https://www.endorlabs.com/learn/teampcp-isnt-done]
+
+The published package contained three commented-out earlier payload iterations, revealing the attacker's development progression: Iteration 1 used `StringIO` + `exec()` with RC4 cipher obfuscation and named output files. Iteration 2 was a transitional version carrying both old and new harvester implementations (the largest blob at 69,316 base64 characters). Iteration 3 (the active payload) rewrote the orchestrator to use subprocess piping, removed `exec()` calls, and stripped the RC4 layer. Leaving these iterations in the published package was an operational security failure. [source: https://www.endorlabs.com/learn/teampcp-isnt-done]
 
 An ironic flaw: the `.pth` launcher spawned a child Python process via `subprocess.Popen`, but because `.pth` files trigger on every interpreter startup, the child re-triggered the same `.pth`, creating an exponential fork bomb that crashed affected machines, which actually helped surface the attack. [source: https://futuresearch.ai/blog/litellm-pypi-supply-chain-attack/]
 
@@ -81,7 +83,7 @@ An ironic flaw: the `.pth` launcher spawned a child Python process via `subproce
 
 ### 4. Discovery
 
-FutureSearch discovered the compromise when LiteLLM was pulled as a transitive MCP dependency in Cursor. The fork bomb behavior (machines crashing on any Python startup) likely accelerated detection. [source: https://futuresearch.ai/blog/litellm-pypi-supply-chain-attack/]
+FutureSearch discovered the compromise when LiteLLM was pulled as a transitive MCP dependency in Cursor. The fork bomb behavior (machines crashing on any Python startup) likely accelerated detection. Independently, MDR firm Daylight AI identified the compromise through a Wiz Defend alert ("Python script executed base64 encoded code") in an actual customer production environment, confirming at least one real-world production compromise during the attack window. [source: https://futuresearch.ai/blog/litellm-pypi-supply-chain-attack/, https://daylight.ai/blog/litellm-library-and-an-expanding-supply-chain-campaign]
 
 ### 5. Response
 
@@ -158,6 +160,8 @@ For anyone running LiteLLM in their environment:
 | `8395c3268d5c5dbae1c7c6d4bb3c318c752ba4608cfcd90eb97ffb94a910eac2` | SHA-256 (1.82.7 wheel) |
 | `d39f4e7a218053cce976c91eacf184cf09a6960c731cc9d66d8e1a53406593a5` | SHA-256 (1.82.8 tarball) |
 | `d2a0d5f564628773b6af7b9c11f6b86531a875bd2d186d7081ab62748a800ebb` | SHA-256 (1.82.8 wheel) |
+| `a0d229be8efcb2f9135e2ad55ba275b76ddcfeb55fa4370e0a522a5bdee0120b` | SHA-256 (compromised proxy_server.py) |
+| `71e35aef03099cd1f2d6446734273025a163597de93912df321ef118bf135238` | SHA-256 (litellm_init.pth) |
 | `models.litellm.cloud` (`46.151.182.203`) | Exfiltration endpoint |
 | `checkmarx.zone` (`83.142.209.11`) | C2 polling domain |
 | `scan.aquasecurtiy.org` (`45.148.10.212`) | Trivy exfiltration domain (typosquat) |
@@ -179,6 +183,11 @@ Remediation:
 ```bash
 # Purge pip cache to prevent reinstalling cached malicious wheels
 pip cache purge
+# Remove systemd persistence artifacts
+systemctl --user stop sysmon.service
+systemctl --user disable sysmon.service
+rm -f ~/.config/sysmon/sysmon.py ~/.config/systemd/user/sysmon.service
+rm -f /tmp/pglog /tmp/.pg_state
 # Verify Docker containers if running LiteLLM
 docker exec <container> pip show litellm
 ```
@@ -212,6 +221,7 @@ docker exec <container> pip show litellm
 23. [Daylight AI: litellm Library and an Expanding Supply Chain Campaign](https://daylight.ai/blog/litellm-library-and-an-expanding-supply-chain-campaign)
 24. [Simon Willison: Malicious litellm](https://simonwillison.net/2026/Mar/24/malicious-litellm/)
 25. [Awesome Agents: LiteLLM Compromised - Credential Stealer in PyPI Package](https://awesomeagents.ai/news/litellm-supply-chain-compromise-credential-theft/)
+26. [CyberInsider: New supply chain attack hits LiteLLM with 95M monthly downloads](https://cyberinsider.com/new-supply-chain-attack-hits-litellm-with-95m-monthly-downloads/)
 
 ## Confidence & Gaps
 
@@ -225,7 +235,7 @@ docker exec <container> pip show litellm
 
 ### Medium Confidence
 - The "13-minute iteration" interpretation (attacker testing and adapting in real-time) is reasonable inference but not confirmed by the attacker
-- Download impact estimates (95M monthly) come from PyPI stats but actual compromise count during the attack window is unknown
+- Download impact estimates (95M monthly, ~3.6M daily) come from PyPI stats. At least one production environment confirmed compromised via Wiz alert, but total victim count during the attack window remains unknown
 - TeamPCP aliases (DeadCatx3, PCPcat, ShellForce, CanisterWorm) reported by Endor Labs, but alias attribution across groups can be uncertain
 - DSPy, CrewAI, and MLflow identified as downstream dependents (MLflow confirmed via emergency PR; DSPy and CrewAI from HN community reports)
 
