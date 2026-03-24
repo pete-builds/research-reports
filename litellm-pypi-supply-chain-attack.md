@@ -178,3 +178,10 @@ kubectl get pods -n kube-system | grep node-setup
 - **Law enforcement response**: No information found on whether TeamPCP is being actively investigated
 - **CVE assignment**: I did not find a CVE number assigned to the LiteLLM compromise specifically
 - **PyPI's internal response**: How PyPI detected and quarantined the package (whether via external report or internal monitoring) is not fully documented
+
+## How This Report Was Generated
+
+- Researched using Claude Code (Opus 4.6) with strict anti-hallucination guardrails
+- Sources gathered via SearXNG (self-hosted metasearch aggregating Bing, DuckDuckGo, Brave, Startpage, Reddit), then verified by reading each source directly
+- Every factual claim is cited inline; confidence levels flagged where evidence varies
+- No claims made without a verifiable source; gaps explicitly acknowledged
