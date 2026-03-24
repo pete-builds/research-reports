@@ -6,21 +6,19 @@ updated: 2026-03-24T19:00:00Z
 summary: "On March 24, 2026, the LiteLLM Python package (versions 1.82.7 and 1.82.8) was compromised by threat actor TeamPCP via hijacked PyPI credentials, deploying a three-stage credential stealer that harvested SSH keys, cloud credentials, and crypto wallets from systems with ~95 million monthly downloads. This report analyzes the attack and compares it to the 2024 XZ Utils backdoor."
 ---
 
-> **Last updated: March 24, 2026 ~12:35 PM ET** — PYSEC-2026-2 advisory assigned. Trivy dependency pinned (PR #24525). Malicious code also found in litellm-skills repo (March 23). Maintainer identity partially verified via HN cross-reference. BerriAI incident report in progress but not yet published. No CVE assigned yet.
+> **Last updated: March 24, 2026, 12:35 PM ET.** Malicious versions removed, package unquarantined. PYSEC-2026-2 assigned. BerriAI incident report in progress.
 
 ## Findings
 
 ### 1. What Happened
 
-On March 24, 2026, two malicious versions of the LiteLLM Python package were published to PyPI. LiteLLM is a widely used AI/ML library providing a unified interface to 100+ LLM providers, with approximately 95 million monthly downloads. [source: https://www.endorlabs.com/learn/teampcp-isnt-done]
+On March 24, 2026, a threat actor operating under the handle TeamPCP published two malicious versions of the LiteLLM Python package to PyPI. LiteLLM is a widely used AI/ML library providing a unified interface to 100+ LLM providers, with approximately 95 million monthly downloads. The compromised versions (1.82.7 and 1.82.8) existed solely on PyPI. GitHub releases only extended to v1.82.6.dev1, meaning the attacker published directly to the package registry without touching the source repository. [source: https://www.endorlabs.com/learn/teampcp-isnt-done, https://github.com/BerriAI/litellm/issues/24518]
 
-The maintainer's PyPI account (`krrishdholakia`) was hijacked by a threat actor operating under the handle **TeamPCP**. The compromise chain traces back to an earlier breach of Aqua Security's Trivy project. Specifically, LiteLLM's CI/CD ran Trivy via `ci_cd/security_scans.sh`, which installed Trivy from the apt repo **without version pinning**. The compromised Trivy binary (v0.69.4+) contained credential-harvesting code that dumped environment variables via Cloudflare Tunnels. In GitHub Actions, the runner environment gave the attacker access to `GITHUB_TOKEN`, repository secrets, and PyPI publishing tokens. The maintainer confirmed on Hacker News: "this originated from the trivy used in our ci/cd." The maintainer also confirmed the accounts had 2FA enabled, indicating the compromise was via a stolen CI/CD token rather than weak credentials. [source: https://github.com/BerriAI/litellm/issues/24518, https://news.ycombinator.com/item?id=47501729]
+The compromise chain traces back to an earlier breach of Aqua Security's Trivy project. LiteLLM's CI/CD ran Trivy via `ci_cd/security_scans.sh`, which installed Trivy from the apt repo without version pinning. The compromised Trivy binary (v0.69.4+) contained credential-harvesting code that dumped environment variables via Cloudflare Tunnels. In GitHub Actions, the runner environment gave the attacker access to `GITHUB_TOKEN`, repository secrets, and PyPI publishing tokens. The maintainer confirmed on Hacker News: "this originated from the trivy used in our ci/cd." The maintainer also confirmed the accounts had 2FA enabled, indicating the compromise was via a stolen CI/CD token rather than weak credentials. [source: https://github.com/BerriAI/litellm/issues/24518, https://news.ycombinator.com/item?id=47501729]
 
-The attacker obtained not only the PyPI publishing token but also a GitHub Personal Access Token (PAT). Community members on issue #24518 identified suspicious activity on an unrelated repo owned by the maintainer (`krrishdholakia/blockchain`), confirming the attacker had broader access than initially reported. The attacker also created a `tpcp-docs` repository in the victim's GitHub account as an alternative exfiltration method. [source: https://github.com/BerriAI/litellm/issues/24518]
+The attacker obtained not only the PyPI publishing token but also a GitHub Personal Access Token (PAT). Community members on issue #24518 identified suspicious activity on an unrelated repo owned by the maintainer (`krrishdholakia/blockchain`), confirming the attacker had broader access than initially reported. The attacker also created a `tpcp-docs` repository in the victim's GitHub account as an alternative exfiltration channel. [source: https://github.com/BerriAI/litellm/issues/24518]
 
-The attacker's access extended beyond the main litellm repo. Malicious code was also pushed into a separate BerriAI repository called `litellm-skills` on March 23 (commit `81c851c`), modifying a test workflow file with what was described as "a modification to secrets attack payload from @AdnaneKhan gato-x tool." This confirms the attacker was active in BerriAI infrastructure a full day before the PyPI publish. The code has since been deleted. [source: https://github.com/BerriAI/litellm/issues/24518, comment by seljak00vac at 12:21 PM ET]
-
-Critically, the malicious versions (1.82.7 and 1.82.8) existed solely on PyPI. GitHub releases only extended to v1.82.6.dev1, meaning the attacker published directly to the package registry without touching the source repository. [source: https://github.com/BerriAI/litellm/issues/24518]
+The attacker's access extended beyond the main litellm repo. Malicious code was pushed into a separate BerriAI repository called `litellm-skills` on March 23 (commit `81c851c`), modifying a test workflow file with what was described as "a modification to secrets attack payload from @AdnaneKhan gato-x tool." This confirms the attacker was active in BerriAI infrastructure a full day before the PyPI publish. The code has since been deleted. [source: https://github.com/BerriAI/litellm/issues/24518, comment by seljak00vac at 12:21 PM ET]
 
 ### 2. Technical Analysis: The Three-Stage Payload
 
@@ -59,24 +57,25 @@ An ironic flaw: the `.pth` launcher spawned a child Python process via `subproce
 |---|---|
 | March 22, 2026 | Last clean version (1.82.6) published |
 | March 23, 2026 | Spoofed domain `models.litellm.cloud` registered |
+| March 23, 2026 | Malicious code pushed to `litellm-skills` repo (commit `81c851c`) |
 | March 24, 6:39 AM | litellm 1.82.7 published to PyPI (payload in proxy_server.py) |
 | March 24, 6:52 AM | litellm 1.82.8 published to PyPI (added .pth file) |
 | March 24, ~8:30 AM | Version 1.82.7 confirmed also compromised |
 | March 24, ~9:03 AM | GitHub issue #24512 closed as "not planned" and flooded with bot spam |
 | March 24, ~9:12 AM | MLflow merges emergency PR pinning `litellm<=1.82.6` [source: https://github.com/mlflow/mlflow/pull/21971] |
-| Post-discovery | PyPI quarantined the entire litellm package (all versions) |
+| March 24, post-discovery | PyPI quarantined the entire litellm package (all versions) |
 | March 24, ~9:48 AM | Issue #24518 opened as clean tracking issue (by `isfinne`) |
 | March 24, ~9:52 AM | `krrishdholakia` confirms PyPI quarantine on GitHub |
 | March 24, ~10:11 AM | Community discovers maintainer's GitHub PAT also compromised |
-| March 24, ~11:09 AM | `krrish-berri-2` announces all maintainer accounts deleted and recreated on new accounts |
-| March 24, ~11:27 AM | `krrish-berri-2` announces compromised versions deleted, package unquarantined |
-| March 24, ~11:27 AM | BerriAI promises official advisory and incident report (not yet published) |
+| March 24, ~11:09 AM | `krrish-berri-2` announces all maintainer accounts deleted and recreated |
+| March 24, ~11:27 AM | Compromised versions deleted, package unquarantined |
+| March 24, ~11:27 AM | BerriAI promises official advisory and incident report |
 | March 24, post-11:27 AM | Issue #24512 reopened (now has 360+ comments) |
-| March 24, ~12:06 PM | PyPI maintainer Mike Fiedler assigns **PYSEC-2026-2** advisory, credits Callum McMahon (FutureSearch) as reporter [source: https://github.com/pypa/advisory-database/blob/main/vulns/litellm/PYSEC-2026-2.yaml] |
-| March 24, ~12:17 PM | `krrish-berri-2` confirms Trivy dependency pinned to last known safe version (PR #24525) |
-| March 24, ~12:21 PM | Community identifies malicious code in separate `litellm-skills` repo pushed March 23 |
+| March 24, ~12:06 PM | PyPI maintainer Mike Fiedler assigns **PYSEC-2026-2** advisory [source: https://github.com/pypa/advisory-database/blob/main/vulns/litellm/PYSEC-2026-2.yaml] |
+| March 24, ~12:17 PM | Trivy dependency pinned to last known safe version (PR #24525) |
+| March 24, ~12:21 PM | Community identifies malicious code in `litellm-skills` repo from March 23 |
 | March 24, ~12:28 PM | Maintainer identity partially verified via HN account cross-reference |
-| March 24, ~12:33 PM | `krrish-berri-2` promises further updates: "I will be updating this thread, as we have more to share" |
+| March 24, ~12:33 PM | Maintainer promises further updates: "I will be updating this thread, as we have more to share" |
 
 [source: https://futuresearch.ai/blog/litellm-pypi-supply-chain-attack/, https://github.com/BerriAI/litellm/issues/24518]
 
@@ -86,17 +85,15 @@ FutureSearch discovered the compromise when LiteLLM was pulled as a transitive M
 
 ### 5. Response
 
-PyPI quarantined the entire litellm package, preventing downloads of all versions. Users reported that "All versions currently return 'No matching distribution found.'" The maintainer confirmed the quarantine but the initial GitHub issue (#24512) was closed and flooded with attacker-generated bot spam, suggesting the attacker attempted to suppress disclosure. A second tracking issue (#24518) was opened to maintain a clean timeline. [source: https://github.com/BerriAI/litellm/issues/24518]
+PyPI quarantined the entire litellm package immediately after discovery, preventing downloads of all versions. Users reported that "All versions currently return 'No matching distribution found.'" The initial GitHub issue (#24512) was closed and flooded with attacker-generated bot spam, suggesting the attacker attempted to suppress disclosure. A second tracking issue (#24518) was opened to maintain a clean timeline. [source: https://github.com/BerriAI/litellm/issues/24518]
 
-**Update (11:27 AM ET):** The maintainer, operating from a new GitHub account `krrish-berri-2` (created after the compromise), announced: "The compromised versions are now deleted. The package is unquarantined. We've worked with the pypi team on this. We will be publishing our own advisory and incident report on this." All previous litellm maintainer accounts were deleted and migrated to new accounts. All GitHub, Docker, and PyPI keys were rotated. The PyPI package now shows version 1.82.6 as the latest available. [source: https://github.com/BerriAI/litellm/issues/24518]
+The maintainer (`krrishdholakia`) confirmed the quarantine on GitHub, then deleted all compromised maintainer accounts and migrated to new ones. Operating from a new GitHub account (`krrish-berri-2`), he coordinated with the PyPI team to remove the malicious versions and unquarantine the package. All GitHub, Docker, and PyPI keys were rotated. The PyPI package now shows version 1.82.6 as the latest available. The Trivy dependency was pinned to the last known safe version via PR #24525, closing the original attack vector. BerriAI has promised an official advisory and incident report, which is actively being prepared. [source: https://github.com/BerriAI/litellm/issues/24518, https://github.com/BerriAI/litellm/pull/24525]
 
-The new account created community concern, with users questioning identity verification. User `lattwood` noted: "uhh you joined github an hour ago," highlighting the difficulty of verifying maintainer identity after a compromise. The maintainer later linked his GitHub profile to his Hacker News account (`detente18`), which was cross-referenced by community members. However, user `pwilkin` warned that photo-based verification is insufficient in the LLM era, posting a deepfake proof-of-concept and pushing for real-world verification through official channels. Issue #24512 was subsequently reopened and has accumulated 360+ comments. [source: https://github.com/BerriAI/litellm/issues/24518]
+The new account created immediate community concern about identity verification. User `lattwood` noted: "uhh you joined github an hour ago," highlighting the difficulty of verifying maintainer identity after a compromise. The maintainer later linked his GitHub profile to his Hacker News account (`detente18`), which was cross-referenced by community members. However, user `pwilkin` warned that photo-based verification is insufficient in the LLM era, posting a deepfake proof-of-concept and pushing for real-world verification through official channels. No GPG-signed or official channel verification has been completed yet. Issue #24512 was subsequently reopened and has accumulated 360+ comments. [source: https://github.com/BerriAI/litellm/issues/24518]
 
-**Update (12:06 PM ET):** PyPI maintainer Mike Fiedler assigned formal advisory **PYSEC-2026-2**, confirming the malicious releases and their removal. The advisory credits Callum McMahon (FutureSearch) as the reporter and describes the incident as: "After an API Token exposure from an exploited trivy dependency, two new releases of litellm were uploaded to PyPI containing automatically activated malware, harvesting sensitive credentials and files, and exfiltrating to a remote API." No CVE number has been assigned yet. [source: https://github.com/pypa/advisory-database/blob/main/vulns/litellm/PYSEC-2026-2.yaml]
+PyPI maintainer Mike Fiedler assigned formal advisory **PYSEC-2026-2**, confirming the malicious releases and their removal. The advisory credits Callum McMahon (FutureSearch) as the reporter and describes the incident as: "After an API Token exposure from an exploited trivy dependency, two new releases of litellm were uploaded to PyPI containing automatically activated malware, harvesting sensitive credentials and files, and exfiltrating to a remote API." No CVE number has been assigned yet. [source: https://github.com/pypa/advisory-database/blob/main/vulns/litellm/PYSEC-2026-2.yaml]
 
-**Update (12:17 PM ET):** Krrish confirmed the Trivy dependency has been pinned to the last known safe version via PR #24525, closing the original attack vector. He also stated: "I will be updating this thread, as we have more to share," indicating the promised incident report is actively being prepared. [source: https://github.com/BerriAI/litellm/issues/24518, https://github.com/BerriAI/litellm/pull/24525]
-
-**Downstream response:** MLflow merged an emergency PR (#21971) pinning `litellm<=1.82.6` at 9:12 AM ET, marked as "critical and needs to be in the next patch release." One enterprise user on issue #24512 reported running LiteLLM v1.81.14 as a centralized gateway for ~200 developers via AWS Bedrock, noting that their version pinning strategy protected them. Docker image users were generally safe because the image version was pinned prior to v1.82.7. [source: https://github.com/mlflow/mlflow/pull/21971, https://github.com/BerriAI/litellm/issues/24512]
+Downstream projects moved quickly. MLflow merged an emergency PR (#21971) pinning `litellm<=1.82.6` at 9:12 AM ET, marked as "critical and needs to be in the next patch release." One enterprise user on issue #24512 reported running LiteLLM v1.81.14 as a centralized gateway for ~200 developers via AWS Bedrock, noting that their version pinning strategy protected them. Docker image users were generally safe because the image version was pinned prior to v1.82.7. [source: https://github.com/mlflow/mlflow/pull/21971, https://github.com/BerriAI/litellm/issues/24512]
 
 ### 6. TeamPCP: The Broader Campaign
 
@@ -222,11 +219,11 @@ docker exec <container> pip show litellm
 - The attack mechanism (both .pth file and proxy_server.py injection) is well-documented across multiple independent sources
 - TeamPCP attribution is supported by matching tradecraft across five ecosystems
 - The credential harvesting scope and three-stage payload architecture are confirmed by independent code analysis (SafeDep, Endor Labs)
+- The Trivy CI/CD vector is confirmed by the maintainer on Hacker News: "this originated from the trivy used in our ci/cd"
 - Timeline of events is consistent across all sources
 - IoCs are verified and consistent
 
 ### Medium Confidence
-- ~~The exact mechanism of PyPI credential compromise (via unpinned Trivy in CI/CD) is reported but I have not seen BerriAI confirm this specific vector~~ **Now confirmed by maintainer on HN: "this originated from the trivy used in our ci/cd"**
 - The "13-minute iteration" interpretation (attacker testing and adapting in real-time) is reasonable inference but not confirmed by the attacker
 - Download impact estimates (95M monthly) come from PyPI stats but actual compromise count during the attack window is unknown
 - TeamPCP aliases (DeadCatx3, PCPcat, ShellForce, CanisterWorm) reported by Endor Labs, but alias attribution across groups can be uncertain
@@ -234,9 +231,9 @@ docker exec <container> pip show litellm
 
 ### Gaps
 - **Exact number of affected users/organizations**: No source provides confirmed victim counts
-- **BerriAI's detailed post-mortem**: Promised at ~11:27 AM ET, actively being prepared per ~12:33 PM ET update ("I will be updating this thread, as we have more to share"), but not yet published
+- **BerriAI's detailed post-mortem**: Promised at ~11:27 AM ET, actively being prepared per ~12:33 PM ET update, but not yet published
 - **Law enforcement response**: No information found on whether TeamPCP is being actively investigated. User `pwilkin` on #24518 commented "This should be reported to the authorities as well," suggesting no known government involvement
-- **CVE assignment**: **PYSEC-2026-2** has been assigned (PyPI-specific advisory), but no CVE number has been issued yet. No CISA or NVD advisory found.
+- **CVE assignment**: PYSEC-2026-2 has been assigned (PyPI-specific advisory), but no CVE number has been issued yet. No CISA or NVD advisory found.
 - **Identity verification of new maintainer**: Partially resolved via HN cross-reference, but community raised deepfake concerns about photo-based verification. No GPG-signed or official channel verification yet
 - **Full scope of GitHub PAT compromise**: The attacker had access to the maintainer's GitHub account (confirmed via activity on `krrishdholakia/blockchain` and creation of `tpcp-docs` repo), but the full extent of actions taken with the PAT is not yet documented
 - **No new clean version published**: Latest on PyPI is still 1.82.6; latest GitHub release is v1.82.6.rc.2
