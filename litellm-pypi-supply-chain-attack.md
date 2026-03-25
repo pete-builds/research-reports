@@ -2,11 +2,11 @@
 title: "LiteLLM PyPI Supply Chain Attack: Analysis and Comparison to XZ Utils Backdoor"
 slug: litellm-pypi-supply-chain-attack
 date: 2026-03-24
-updated: 2026-03-24T22:15:00Z
+updated: 2026-03-25T12:57:00Z
 summary: "On March 24, 2026, the LiteLLM Python package (versions 1.82.7 and 1.82.8) was compromised by threat actor TeamPCP via hijacked PyPI credentials, deploying a three-stage credential stealer that harvested SSH keys, cloud credentials, and crypto wallets from systems with ~95 million monthly downloads. This report analyzes the attack and compares it to the 2024 XZ Utils backdoor."
 ---
 
-> **Last updated: March 24, 2026, 6:15 PM ET.** The Register, Security Boulevard, and a second Hacker News article now covering. Endor Labs and JFrog credited as co-discoverers alongside FutureSearch. BerriAI announces plan to implement trusted publishing via JWT tokens and migrate to a new PyPI account. Compromised GitHub account count updated to 123. Issue #24512 has surpassed 400 comments. Community members flagging pre-existing code quality concerns (issue #23383) as contributing factor. IoCs still absent from all major threat intel platforms.
+> **Last updated: March 25, 2026, 8:57 AM ET.** Coverage explosion: BleepingComputer, SecurityWeek, CSO Online, CyberNews, InfoWorld, Snyk, ReversingLabs, Sonatype, Risky Biz, and 15+ additional outlets now reporting. Lapsus$ confirmed as TeamPCP collaborator for extortion. Wiz and Socket confirm 1,000+ SaaS environments compromised. FBI Assistant Director Brett Leatherman issues public warning. Microsoft Defender team publishes detection guidance. MalwareBazaar now cataloging IoCs (first threat intel platform coverage). LiteLLM publishes official security blog post; releases remain paused. Attack timed to coincide with RSA Conference.
 
 ## Findings
 
@@ -95,6 +95,13 @@ An ironic flaw: the `.pth` launcher spawned a child Python process via `subproce
 | March 24, ~4:11 PM | Community criticism surfaces pre-existing code quality concerns (issue #23383), noting broken unit tests and security deprioritized for 1-2 years [source: https://github.com/BerriAI/litellm/issues/24518] |
 | March 24, ~5:08 PM | Compromised account count updated to 123 (up from 121) [source: https://github.com/BerriAI/litellm/issues/24512] |
 | March 24, evening | The Register, Security Boulevard, and second Hacker News article publish; Endor Labs and JFrog credited as additional discoverers [source: https://www.theregister.com/2026/03/24/trivy_compromise_litellm/, https://thehackernews.com/2026/03/teampcp-backdoors-litellm-versions.html] |
+| March 24, ~10:29 PM | BleepingComputer publishes: "TeamPCP claims to have stolen data from hundreds of thousands of devices" [source: https://www.bleepingcomputer.com/news/security/popular-litellm-pypi-package-compromised-in-teampcp-supply-chain-attack/] |
+| March 25, morning | Coverage explosion: 15+ new outlets publish (SecurityWeek, CSO Online, CyberNews, InfoWorld, Snyk, ReversingLabs, Sonatype, Infosecurity Magazine, Risky Biz podcast, DreamFactory, Comet, NetSPI, SISA, Upwind, Phoenix Security) |
+| March 25, morning | CSO Online reports Lapsus$ confirmed as TeamPCP collaborator; 1,000+ SaaS environments compromised; CanisterWorm backdoors 29+ npm packages [source: https://www.csoonline.com/article/4149938/trivy-supply-chain-breach-compromises-over-1000-saas-environments-lapsus-joins-the-extortion-wave.html] |
+| March 25, morning | FBI Assistant Director Brett Leatherman warns of "increased breach disclosures, follow-on intrusions, and extortion attempts in the coming weeks" [source: https://www.infosecurity-magazine.com/news/teampcp-litellm-pypi-supply-chain/] |
+| March 25, morning | Microsoft Defender Security Research Team publishes detection and investigation guidance [source: https://www.microsoft.com/en-us/security/blog/2026/03/24/detecting-investigating-defending-against-trivy-supply-chain-compromise/] |
+| March 25, morning | LiteLLM publishes official security blog post confirming attack window 10:39-16:00 UTC [source: https://docs.litellm.ai/blog/security-update-march-2026] |
+| March 25, ~12:07 PM UTC | MalwareBazaar catalogs first IoC hashes tagged `checkmarx-zone,models-litellm-cloud` (first major threat intel platform coverage) |
 
 [source: https://futuresearch.ai/blog/litellm-pypi-supply-chain-attack/, https://github.com/BerriAI/litellm/issues/24518]
 
@@ -112,6 +119,14 @@ The new account created immediate community concern about identity verification.
 
 PyPI maintainer Mike Fiedler assigned formal advisory **PYSEC-2026-2**, confirming the malicious releases and their removal. The advisory credits Callum McMahon (FutureSearch) as the reporter and describes the incident as: "After an API Token exposure from an exploited trivy dependency, two new releases of litellm were uploaded to PyPI containing automatically activated malware, harvesting sensitive credentials and files, and exfiltrating to a remote API." No CVE number has been assigned yet. [source: https://github.com/pypa/advisory-database/blob/main/vulns/litellm/PYSEC-2026-2.yaml]
 
+BerriAI published an official security update at `docs.litellm.ai/blog/security-update-march-2026`, confirming: the attack window was March 24, 2026 between 10:39-16:00 UTC; the attacker "bypassed official CI/CD workflows and uploaded malicious packages directly to PyPI"; proxy Docker image users were not impacted because all dependencies were pinned in requirements.txt; and all new releases remain paused "until we complete a broader supply-chain review and confirm the release path is safe." New authorized PyPI maintainer accounts are `@krrish-berri-2` and `@ishaan-berri`. [source: https://docs.litellm.ai/blog/security-update-march-2026]
+
+Sonatype's automated malware detection blocked the malicious versions "within seconds of publication" (tracked as sonatype-2026-001357), though the packages remained available on PyPI for approximately two hours before quarantine. [source: https://www.sonatype.com/blog/compromised-litellm-pypi-package-delivers-multi-stage-credential-stealer]
+
+FBI Assistant Director Brett Leatherman issued a public warning about "increased breach disclosures, follow-on intrusions, and extortion attempts in the coming weeks." [source: https://www.infosecurity-magazine.com/news/teampcp-litellm-pypi-supply-chain/]
+
+Microsoft's Defender Security Research Team published detection and investigation guidance on March 25 in a 1,737-word blog post covering attacker techniques and CI/CD pipeline defense. [source: https://www.microsoft.com/en-us/security/blog/2026/03/24/detecting-investigating-defending-against-trivy-supply-chain-compromise/]
+
 Downstream projects moved quickly. MLflow merged an emergency PR (#21971) pinning `litellm<=1.82.6` at 9:12 AM ET, marked as "critical and needs to be in the next patch release." One enterprise user on issue #24512 reported running LiteLLM v1.81.14 as a centralized gateway for ~200 developers via AWS Bedrock, noting that their version pinning strategy protected them. Docker image users were generally safe because the image version was pinned prior to v1.82.7. NVIDIA Developer Forums also posted an urgent advisory telling users to pin to 1.82.6. [source: https://github.com/mlflow/mlflow/pull/21971, https://github.com/BerriAI/litellm/issues/24512, https://forums.developer.nvidia.com/t/critical-attack-litellm-compromised-pin1-82-6-now/364638]
 
 Security researcher DanielRuf took the additional step of notifying both CISA and the German CERT (CERT-Bund/BSI), and published a template for other researchers to contact their national CERTs via the FIRST.org member directory. This was the first confirmed government notification. DanielRuf noted that individual CVEs are project-specific and that an industry-wide warning was needed given the cross-ecosystem scope. [source: https://github.com/BerriAI/litellm/issues/24518]
@@ -120,7 +135,7 @@ A notable secondary effect: 123 GitHub accounts were identified posting automate
 
 ### 6. TeamPCP: The Broader Campaign
 
-This was not an isolated incident. TeamPCP executed a coordinated supply chain campaign across five ecosystems in under a month:
+This was not an isolated incident. TeamPCP executed a coordinated supply chain campaign across six ecosystems in under a month:
 
 | Date | Target | Ecosystem | Method |
 |---|---|---|---|
@@ -132,6 +147,14 @@ This was not an isolated incident. TeamPCP executed a coordinated supply chain c
 | Mar 24 | LiteLLM | PyPI | Publishing credentials compromised via Trivy |
 
 Attribution relies on matching tradecraft: identical C2 domains, persistence paths (`~/.config/sysmon/`), encryption schemes, and the `tpcp.tar.gz` filename directly referencing TeamPCP. The group also operates under aliases including DeadCatx3, PCPcat, ShellForce, and CanisterWorm. Two commented-out earlier payload iterations remained in the published package, an operational security failure revealing development progression from RC4-obfuscated shells to plaintext harvester code. [source: https://www.endorlabs.com/learn/teampcp-isnt-done]
+
+**Lapsus$ collaboration confirmed.** CSO Online reported on March 25 that Lapsus$, the extortion group known for high-profile breaches, has joined TeamPCP's campaign. Stolen access is being channeled to broader criminal networks for extortion. Mandiant CTO Charles Carmakal warned victims could expand to "another 500, another 1,000, maybe another 10,000." [source: https://www.csoonline.com/article/4149938/trivy-supply-chain-breach-compromises-over-1000-saas-environments-lapsus-joins-the-extortion-wave.html]
+
+**CanisterWorm self-propagation.** Socket researchers identified a self-replicating component called CanisterWorm using stolen npm tokens to backdoor 29+ npm packages, extending the campaign's reach beyond manually targeted repositories. Cached malicious Trivy Docker images (v0.69.5 and v0.69.6) continue circulating through mirror.gcr.io despite takedowns. [source: https://www.csoonline.com/article/4149938/trivy-supply-chain-breach-compromises-over-1000-saas-environments-lapsus-joins-the-extortion-wave.html]
+
+**RSA Conference timing.** Multiple sources noted the LiteLLM PyPI attack was timed to coincide with the RSA Conference, launching while "defenders were busy." The Aqua Security GitHub organization was also defaced during this period, with 44 repositories renamed to "TeamPCP Owns Aqua Security." [source: https://www.csoonline.com/article/4149938/trivy-supply-chain-breach-compromises-over-1000-saas-environments-lapsus-joins-the-extortion-wave.html]
+
+**Checkmarx KICS also compromised.** The campaign extended to Checkmarx's KICS scanner: VS Code extensions checkmarx.ast-results v2.53 (36,000 downloads) and checkmarx.cx-dev-assist v1.7.0 (500 downloads) on OpenVSX were affected via the `cx-plugins-releases` service account. Dark Reading attributed this to TeamPCP and warned "all signs point to more attacks to come." [source: https://www.darkreading.com/application-security/checkmarx-kics-code-scanner-widening-supply-chain, https://www.reversinglabs.com/blog/teampcp-supply-chain-attack-spreads]
 
 A separate component of TeamPCP's toolkit includes an Iran-targeted wiper: when the malware detects the system is configured for Iran (via `Asia/Tehran` timezone or `fa_IR` locale), the payload switches from credential theft to destructive wiping of the machine. The self-propagating backdoor also uses compromised Kubernetes clusters to spread laterally without manual intervention, deploying privileged pods that chroot into host filesystems. The financial motivation is underscored by heavy targeting of Solana validator keypairs and cryptocurrency wallets. [source: https://www.bleepingcomputer.com/news/security/teampcp-deploys-iran-targeted-wiper-in-kubernetes-attacks/, https://arstechnica.com/security/2026/03/self-propagating-malware-poisons-open-source-software-and-wipes-iran-based-machines/]
 
@@ -161,9 +184,9 @@ The XZ Utils backdoor, discovered March 29, 2024, is the most significant prior 
 
 **High confidence:**
 
-1. **AI/ML packages are high-value targets.** LiteLLM sits at the intersection of every major cloud provider's credentials. A library that proxies API calls to OpenAI, Anthropic, AWS Bedrock, and others naturally has access to the most sensitive keys in any organization. The attacker knew this, targeting cloud credentials, Kubernetes secrets, and crypto wallets specifically.
+1. **AI/ML packages are high-value targets.** LiteLLM sits at the intersection of every major cloud provider's credentials. A library that proxies API calls to OpenAI, Anthropic, AWS Bedrock, and others naturally has access to the most sensitive keys in any organization. The attacker knew this, targeting cloud credentials, Kubernetes secrets, and crypto wallets specifically. As Wiz head of threat exposure Gal Nagli stated: "The open source supply chain is collapsing in on itself. Trivy gets compromised, LiteLLM gets compromised, credentials from tens of thousands of environments end up in attacker hands, and those credentials lead to the next compromise." [source: https://thehackernews.com/2026/03/teampcp-backdoors-litellm-versions.html]
 
-2. **Transitive dependency risk is amplified in AI tooling.** LiteLLM is pulled in by AI agent frameworks, MCP servers, and LLM orchestration tools. Many developers who were compromised never directly installed it. Specific downstream frameworks identified as affected include **DSPy** (uses LiteLLM as its primary upstream provider interface) and **CrewAI** (depends on it as a fallback mechanism). The AI ecosystem's rapid growth and deep dependency chains create an expanding attack surface. [source: https://news.ycombinator.com/item?id=47501729]
+2. **Transitive dependency risk is amplified in AI tooling.** LiteLLM is pulled in by AI agent frameworks, MCP servers, and LLM orchestration tools. Many developers who were compromised never directly installed it. Specific downstream frameworks identified as affected include **DSPy** (uses LiteLLM as its primary upstream provider interface), **CrewAI** (depends on it as a fallback mechanism), **Browser-Use**, and **Opik** (Comet). Comet published their own response confirming LiteLLM as a dependency of Opik. The AI ecosystem's rapid growth and deep dependency chains create an expanding attack surface. [source: https://news.ycombinator.com/item?id=47501729, https://www.comet.com/site/blog/litellm-supply-chain-attack/]
 
 3. **CI/CD pipeline security is the new perimeter.** The attack chain started with Trivy (a security scanner, ironically), moved through npm, Docker Hub, and IDE extensions, and ended at PyPI. Unpinned dependencies in CI/CD pipelines were the entry point. Organizations that pinned their security tooling versions were protected.
 
@@ -195,6 +218,9 @@ For anyone running LiteLLM in their environment:
 | `/tmp/pglog` or `/tmp/.pg_state` | State files |
 | `node-setup-*` pods in `kube-system` | Kubernetes lateral movement |
 | `tpcp-docs` repository in victim GitHub accounts | Fallback exfiltration channel |
+| `cd6af6c9ba149673ff89a1f1ccc8ec40a265a3b54ad455fbef28dc2967a98e45` | SHA-256 (MalwareBazaar, tagged checkmarx-zone + models-litellm-cloud) |
+| `05bacbe163ef0393c2416cbd05e45e74` | MD5 (MalwareBazaar, tagged checkmarx-zone + models-litellm-cloud) |
+| `tpcp.tar.gz` | Encrypted exfiltration archive (AES-256-CBC + RSA-4096 OAEP) |
 
 Detection commands:
 ```bash
@@ -260,6 +286,23 @@ docker exec <container> pip show litellm
 37. [The Register: LiteLLM loses game of Trivy pursuit, gets compromised](https://www.theregister.com/2026/03/24/trivy_compromise_litellm/)
 38. [Security Boulevard: Trivy's March Supply Chain Attack Shows Where Secret Exposure Hurts Most](https://securityboulevard.com/2026/03/trivys-march-supply-chain-attack-shows-where-secret-exposure-hurts-most/)
 39. [The Hacker News: TeamPCP Hacks Checkmarx GitHub Actions Using Stolen CI Credentials](https://thehackernews.com/2026/03/teampcp-hacks-checkmarx-github-actions.html)
+40. [BleepingComputer: Popular LiteLLM PyPI package compromised in TeamPCP supply chain attack](https://www.bleepingcomputer.com/news/security/popular-litellm-pypi-package-compromised-in-teampcp-supply-chain-attack/)
+41. [SecurityWeek: From Trivy to Broad OSS Compromise: TeamPCP Hits Docker Hub, VS Code, PyPI](https://www.securityweek.com/from-trivy-to-broad-oss-compromise-teampcp-hits-docker-hub-vs-code-pypi/)
+42. [CSO Online: Trivy supply chain breach compromises over 1,000 SaaS environments, Lapsus$ joins the extortion wave](https://www.csoonline.com/article/4149938/trivy-supply-chain-breach-compromises-over-1000-saas-environments-lapsus-joins-the-extortion-wave.html)
+43. [Infosecurity Magazine: TeamPCP Expands Supply Chain Campaign With LiteLLM PyPI Compromise](https://www.infosecurity-magazine.com/news/teampcp-litellm-pypi-supply-chain/)
+44. [Dark Reading: Checkmarx KICS Code Scanner Targeted in Widening Supply Chain Hit](https://www.darkreading.com/application-security/checkmarx-kics-code-scanner-widening-supply-chain)
+45. [CyberNews: Critical Python supply chain compromise](https://cybernews.com/security/critical-litellm-supply-chain-attack-sends-shockwaves/)
+46. [InfoWorld: PyPI warns developers after LiteLLM malware found stealing cloud and CI/CD credentials](https://www.infoworld.com/article/4149909/pypi-warns-developers-after-litellm-malware-found-stealing-cloud-and-ci-cd-credentials-2.html)
+47. [Snyk: How a Poisoned Security Scanner Became the Key to Backdooring LiteLLM](https://snyk.io/articles/poisoned-security-scanner-backdooring-litellm/)
+48. [Microsoft: Guidance for detecting, investigating, and defending against the Trivy supply chain compromise](https://www.microsoft.com/en-us/security/blog/2026/03/24/detecting-investigating-defending-against-trivy-supply-chain-compromise/)
+49. [LiteLLM: Security Update March 2026](https://docs.litellm.ai/blog/security-update-march-2026)
+50. [Sonatype: Compromised litellm PyPI Package Delivers Multi-Stage Credential Stealer](https://www.sonatype.com/blog/compromised-litellm-pypi-package-delivers-multi-stage-credential-stealer)
+51. [Risky Biz: LiteLLM and security scanner supply chains compromised (podcast)](https://risky.biz/RB830/)
+52. [DreamFactory: The AI Supply Chain Is Now Critical Infrastructure](https://blog.dreamfactory.com/the-ai-supply-chain-is-now-critical-infrastructure-lessons-from-the-teampcp-campaign-that-hit-trivy-checkmarx-and-litellm)
+53. [Comet: LiteLLM Supply Chain Attack - What Happened, Who's Affected](https://www.comet.com/site/blog/litellm-supply-chain-attack/)
+54. [Upwind: LiteLLM PyPI Supply Chain Attack Enables RCE & Exfiltration](https://www.upwind.io/feed/litellm-pypi-supply-chain-attack-malicious-release)
+55. [SISA InfoSec: LiteLLM Supply Chain Compromise Threat Report](https://www.sisainfosec.com/blogs/litellm-supply-chain-compromise-when-your-ai-dependency-becomes-an-attack-vector/)
+56. [NetSPI: LiteLLM Supply Chain Compromise](https://www.netspi.com/blog/executive-blog/ai-ml-pentesting/litellm-supply-chain-compromise/)
 
 ## Confidence & Gaps
 
@@ -278,11 +321,11 @@ docker exec <container> pip show litellm
 - DSPy, CrewAI, and MLflow identified as downstream dependents (MLflow confirmed via emergency PR; DSPy and CrewAI from HN community reports)
 
 ### Gaps
-- **Exact number of affected users/organizations**: No source provides confirmed victim counts
-- **BerriAI's detailed post-mortem**: Mandiant engaged, but official incident report not yet published
+- **Exact number of affected users/organizations**: Wiz and Socket now confirm 1,000+ SaaS environments affected, with Mandiant CTO warning of potential expansion to 10,000+. TeamPCP claims "hundreds of thousands of devices." Exact confirmed count remains unclear.
+- **BerriAI's detailed post-mortem**: Mandiant engaged; official security blog post published at docs.litellm.ai but full incident report not yet released
 - **Exfiltration domain still live**: `litellm.cloud` takedown stalled at registrar level. BerriAI has contacted both Spaceship (registrar) and Cloudflare directly via phone (number provided by community member). DanielRuf also independently contacted Spaceship and demenin about both `checkmarx.zone` and `litellm.cloud`. Domain may still be collecting data from compromised systems with active persistence. [source: https://github.com/BerriAI/litellm/issues/24518]
-- **Law enforcement/government response**: DanielRuf confirmed he notified both CISA and German CERT (CERT-Bund/BSI) and published a template for contacting national CERTs. No public acknowledgment from CISA or any government agency yet. No indication of active law enforcement investigation into TeamPCP.
-- **Threat intel platform gap**: All six IoCs (models.litellm.cloud, 46.151.182.203, checkmarx.zone, 83.142.209.11, scan.aquasecurtiy.org, 45.148.10.212) return zero hits across URLhaus, MalwareBazaar, ThreatFox, Feodo Tracker, and AlienVault OTX as of 6:15 PM ET (re-scanned). OTX pulse searches for "TeamPCP," "litellm," and "supply chain PyPI" also returned zero results. Ahmia dark web index returned no results. These indicators have not yet been cataloged by any major threat intelligence platform, a significant gap given the scale of media coverage.
+- **Law enforcement/government response**: DanielRuf confirmed he notified both CISA and German CERT (CERT-Bund/BSI). FBI Assistant Director Brett Leatherman has issued a public warning but no formal advisory or investigation announcement. Microsoft published detection guidance. CVE-2026-33634 is still not in the CISA KEV catalog. No CISA advisory published yet.
+- **Threat intel platform gap partially closing**: As of 8:57 AM ET March 25, MalwareBazaar now has two hash entries tagged `checkmarx-zone,models-litellm-cloud` (first seen 12:07 UTC March 25). However, the six network IoCs (models.litellm.cloud, 46.151.182.203, checkmarx.zone, 83.142.209.11, scan.aquasecurtiy.org, 45.148.10.212) still return zero hits across URLhaus, ThreatFox, Feodo Tracker, and AlienVault OTX. OTX pulse searches for "TeamPCP," "litellm," and "supply chain" still return zero results. Coverage improving but domain/IP indicators remain uncataloged.
 - **CVE assignment**: PYSEC-2026-2 has been assigned (PyPI-specific advisory). The upstream Trivy compromise received **CVE-2026-33634** (assigned by GitHub's CNA) [source: https://github.com/aquasecurity/trivy/discussions/10425], but no LiteLLM-specific CVE has been issued yet. Security researcher DanielRuf has proposed escalating to CISA for an industry-wide warning. No CISA or NVD advisory found as of this update.
 - **Identity verification of new maintainer**: Partially resolved via HN cross-reference, but community raised deepfake concerns about photo-based verification. No GPG-signed or official channel verification yet
 - **Full scope of GitHub PAT compromise**: The attacker had access to the maintainer's GitHub account (confirmed via activity on `krrishdholakia/blockchain` and creation of `tpcp-docs` repo), but the full extent of actions taken with the PAT is not yet documented
