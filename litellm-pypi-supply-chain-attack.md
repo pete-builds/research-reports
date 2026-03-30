@@ -1,5 +1,5 @@
 ---
-title: "LiteLLM PyPI Supply Chain Attack: Analysis and Comparison to XZ Utils Backdoor"
+title: "LiteLLM PyPI Supply Chain Attack: Full Analysis and Incident Tracker"
 slug: litellm-pypi-supply-chain-attack
 date: 2026-03-24
 updated: 2026-03-30T10:00:00-04:00
