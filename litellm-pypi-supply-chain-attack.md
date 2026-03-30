@@ -18,6 +18,20 @@ summary: "On March 24, 2026, the LiteLLM Python package (versions 1.82.7 and 1.8
 >
 > *Previous: March 26, 2026, 2:45 PM ET. Microsoft publishes expanded Defender XDR detection guidance. SANS Institute, Kaspersky, Okta, Arctic Wolf, Trend Micro, Deepwatch, Recorded Future, and Point Wild all publish advisories or tools (coverage now 35+ outlets). CISA reportedly adds CVE-2026-33634 to KEV catalog. Point Wild releases free "who-touched-my-packages" (wtmp) behavioral scanner. CanisterWorm npm package count revised upward to 66+ (from 29+). Mandiant estimate: 1,000+ SaaS environments confirmed, potentially 5,000-10,000.*
 
+## Table of Contents
+
+1. [What Happened](#1-what-happened)
+2. [Technical Analysis: The Three-Stage Payload](#2-technical-analysis-the-three-stage-payload)
+3. [Affected Versions and Timeline](#3-affected-versions-and-timeline)
+4. [Discovery](#4-discovery)
+5. [Response](#5-response)
+6. [TeamPCP: The Broader Campaign](#6-teampcp-the-broader-campaign)
+7. [Comparison to XZ Utils Backdoor (CVE-2024-3094)](#7-comparison-to-xz-utils-backdoor-cve-2024-3094)
+8. [Broader Implications for AI/ML Supply Chain Security](#8-broader-implications-for-aiml-supply-chain-security)
+9. [Indicators of Compromise](#9-indicators-of-compromise)
+10. [Sources](#sources)
+11. [Confidence & Gaps](#confidence--gaps)
+
 ## Findings
 
 ### 1. What Happened
