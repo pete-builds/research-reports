@@ -2,7 +2,7 @@
 title: "LiteLLM PyPI Supply Chain Attack: Admin Guide and Incident Tracker"
 date: 2026-03-24
 updated: 2026-03-30 1:10 PM ET / 5:10 PM UTC
-polled: 2026-03-30 1:10 PM ET
+polled: 2026-03-30 6:24 PM ET
 summary: "On March 24, 2026, LiteLLM versions 1.82.7 and 1.82.8 on PyPI were backdoored by TeamPCP using stolen CI/CD credentials. The malware harvested SSH keys, cloud credentials, API keys, and crypto wallets. This guide is for LiteLLM admins: is it safe to update? What do you need to know? What should you check and rotate?"
 ---
 
@@ -11,7 +11,7 @@ summary: "On March 24, 2026, LiteLLM versions 1.82.7 and 1.82.8 on PyPI were bac
 ## Current Status
 
 *Last substantive update: March 30, 2026, 1:10 PM ET.*
-*Last polled for new developments: March 30, 2026, 1:10 PM ET.*
+*Last polled for new developments: March 30, 2026, 6:24 PM ET.*
 
 - **Latest safe version:** LiteLLM v1.82.6 remains the latest on PyPI (8 days since last release). No clean release published yet. GitHub releases at v1.82.6.dev2. All new releases paused pending Mandiant forensic review.
 - **C2 infrastructure:** Exfiltration domain `litellm.cloud` takedown still stalled at registrar level. Domain may still be collecting data from systems with active persistence. Telnyx C2 at `83.142.209.203:8080` status unknown.
@@ -212,9 +212,9 @@ In March 2026, TeamPCP executed a coordinated supply chain campaign across seven
 | Mar 27 | Telnyx | PyPI | Publishing token harvested from LiteLLM credential sweep; WAV steganography payload delivery [source: https://thehackernews.com/2026/03/teampcp-pushes-malicious-telnyx.html] |
 | Mar 30 | Databricks (alleged) | Under investigation | Notified of potential compromise connected to TeamPCP campaign; investigating, not confirmed [source: https://cybersecuritynews.com/databricks-teampcp-supply-chain/] |
 
-Attribution relies on matching tradecraft: identical C2 domains, persistence paths (`~/.config/sysmon/`), encryption schemes, and the `tpcp.tar.gz` filename directly referencing TeamPCP. The group also operates under aliases including DeadCatx3, PCPcat, Persy_PCP, ShellForce, and CanisterWorm. Palo Alto Networks also tracks the group as **CipherForce**: TeamPCP states directly "CipherForce is a newer project we are starting to find affiliates and are hoping to begin publishing companies soon," indicating it is a dedicated affiliate extortion platform and leak site being built by the same actors, distinct from (but related to) the previously reported Vect ransomware alliance. Telegram channels: @Persy_PCP and @teampcp. [source: https://redskyalliance.org/xindustry/litellm-python, https://www.paloaltonetworks.com/blog/cloud-security/trivy-supply-chain-attack/] Two commented-out earlier payload iterations remained in the published package, an operational security failure revealing development progression from RC4-obfuscated shells to plaintext harvester code. [source: https://www.endorlabs.com/learn/teampcp-isnt-done]
+Attribution relies on matching tradecraft: identical C2 domains, persistence paths (`~/.config/sysmon/`), encryption schemes, and the `tpcp.tar.gz` filename directly referencing TeamPCP. The group also operates under aliases including DeadCatx3, PCPcat, Persy_PCP, ShellForce, and CanisterWorm. Palo Alto Networks also tracks the group as **CipherForce**, a dedicated affiliate extortion platform distinct from the previously reported Vect ransomware alliance. Telegram channels: @Persy_PCP and @teampcp. [source: https://redskyalliance.org/xindustry/litellm-python, https://www.paloaltonetworks.com/blog/cloud-security/trivy-supply-chain-attack/] Two commented-out earlier payload iterations remained in the published package, an operational security failure revealing development progression from RC4-obfuscated shells to plaintext harvester code. [source: https://www.endorlabs.com/learn/teampcp-isnt-done]
 
-**Dual ransomware operations.** TeamPCP operates two parallel monetization channels: CipherForce is their proprietary ransomware operation for direct control over high-value targets (no confirmed deployments yet, but infrastructure and affiliate recruitment are active), while Vect is a mass affiliate program distributing ransomware keys via BreachForums. This dual-track approach lets the group maintain direct control over premium victims while flooding the ecosystem with commodity operations. [source: https://isc.sans.edu/forums/diary/32846/, https://www.cyberkendra.com/2026/03/the-litellm-hack-was-just-opening-move.html]
+**Dual ransomware operations.** TeamPCP now operates two parallel ransomware programs, CipherForce (direct high-value targeting) and Vect (mass affiliate distribution via BreachForums), confirming the campaign has fully shifted to monetization of stolen credentials. [source: https://isc.sans.edu/forums/diary/32846/, https://www.cyberkendra.com/2026/03/the-litellm-hack-was-just-opening-move.html]
 
 **AstraZeneca data released.** Lapsus$ released a claimed 3 GB archive of AstraZeneca data for free after failing to secure buyers via Session encrypted messaging. Cybernews partially verified the dump, finding GitHub user information for internal developers, employee data from clinical research subsidiaries, and internal source code tree structures. AstraZeneca has issued no public statement as of 96 hours post-claim. For LiteLLM admins: this confirms stolen credentials from the campaign are actively being used to breach downstream organizations. [source: https://isc.sans.edu/forums/diary/32846/, https://www.securityweek.com/extortion-group-claims-it-hacked-astrazeneca/]
 
