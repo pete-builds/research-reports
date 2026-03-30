@@ -5,6 +5,8 @@ updated: 2026-03-30 11:07 AM ET / 3:07 PM UTC
 summary: "On March 24, 2026, the LiteLLM Python package (versions 1.82.7 and 1.82.8) was compromised by threat actor TeamPCP via hijacked PyPI credentials, deploying a three-stage credential stealer that harvested SSH keys, cloud credentials, and crypto wallets from systems with ~97 million monthly downloads. On March 27, TeamPCP struck again, compromising the Telnyx PyPI package using credentials harvested from the LiteLLM attack. On March 30, Databricks is investigating an alleged connection to the campaign; SANS Stormcast reports TeamPCP is brokering stolen credentials on BreachForums; HivePro reveals TeamPCP's December 2025 worm campaign compromised 60,000+ servers globally. This report analyzes the attack chain and compares it to the 2024 XZ Utils backdoor."
 ---
 
+**TL;DR:** LiteLLM versions 1.82.7 and 1.82.8 on PyPI were backdoored on March 24 by TeamPCP using credentials stolen from a compromised Trivy security scanner. The malware harvested SSH keys, cloud credentials, API keys, and crypto wallets from every system that ran `pip install` during a ~5 hour window (47,000 downloads). Three days later, TeamPCP used those stolen credentials to compromise the Telnyx package too. No clean LiteLLM release yet. Pin to v1.82.6 and rotate everything.
+
 ## Current Status
 
 *As of March 30, 2026, 11:07 AM ET.*
