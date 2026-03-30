@@ -19,93 +19,20 @@ summary: "On March 24, 2026, the LiteLLM Python package (versions 1.82.7 and 1.8
 
 ## Table of Contents
 
-1. [Indicators of Compromise, Detection & Remediation](#indicators-of-compromise-detection--remediation)
-2. [What Happened](#1-what-happened)
-3. [Technical Analysis: The Three-Stage Payload](#2-technical-analysis-the-three-stage-payload)
-4. [Timeline](#3-affected-versions-and-timeline)
-5. [Discovery](#4-discovery)
-6. [Response](#5-response)
-7. [TeamPCP: The Broader Campaign](#6-teampcp-the-broader-campaign)
-8. [Broader Implications for AI/ML Supply Chain Security](#8-broader-implications-for-aiml-supply-chain-security)
-9. [Comparison to XZ Utils Backdoor (CVE-2024-3094)](#7-comparison-to-xz-utils-backdoor-cve-2024-3094)
+1. [What Happened](#1-what-happened)
+2. [Technical Analysis: The Three-Stage Payload](#2-technical-analysis-the-three-stage-payload)
+3. [Timeline](#3-affected-versions-and-timeline)
+4. [Discovery](#4-discovery)
+5. [Response](#5-response)
+6. [TeamPCP: The Broader Campaign](#6-teampcp-the-broader-campaign)
+7. [Broader Implications for AI/ML Supply Chain Security](#8-broader-implications-for-aiml-supply-chain-security)
+8. [Comparison to XZ Utils Backdoor (CVE-2024-3094)](#7-comparison-to-xz-utils-backdoor-cve-2024-3094)
+9. [Indicators of Compromise, Detection & Remediation](#indicators-of-compromise-detection--remediation)
 10. [Confidence Assessment](#confidence-assessment)
 11. [Open Questions](#open-questions)
 12. [Sources](#sources)
 13. [Update History](#update-history)
 14. [How This Report Was Generated](#how-this-report-was-generated)
-
-## Indicators of Compromise, Detection & Remediation
-
-For anyone running LiteLLM in their environment:
-
-| IoC | Type |
-|---|---|
-| `8a2a05fd8bdc329c8a86d2d08229d167500c01ecad06e40477c49fb0096efdea` | SHA-256 (1.82.7 tarball) |
-| `8395c3268d5c5dbae1c7c6d4bb3c318c752ba4608cfcd90eb97ffb94a910eac2` | SHA-256 (1.82.7 wheel) |
-| `d39f4e7a218053cce976c91eacf184cf09a6960c731cc9d66d8e1a53406593a5` | SHA-256 (1.82.8 tarball) |
-| `d2a0d5f564628773b6af7b9c11f6b86531a875bd2d186d7081ab62748a800ebb` | SHA-256 (1.82.8 wheel) |
-| `a0d229be8efcb2f9135e2ad55ba275b76ddcfeb55fa4370e0a522a5bdee0120b` | SHA-256 (compromised proxy_server.py) |
-| `71e35aef03099cd1f2d6446734273025a163597de93912df321ef118bf135238` | SHA-256 (litellm_init.pth) |
-| `6cf223aea68b0e8031ff68251e30b6017a0513fe152e235c26f248ba1e15c92a` | SHA-256 (sysmon.py backdoor) [source: Red Sky Alliance] |
-| `85ED77A21B88CAE721F369FA6B7BBBA3` | MD5 (Kaspersky) |
-| `2E3A4412A7A487B32C5715167C755D08` | MD5 (Kaspersky) |
-| `0FCCC8E3A03896F45726203074AE225D` | MD5 (Kaspersky) |
-| `F5560871F6002982A6A2CC0B3EE739F7` | MD5 (Kaspersky) |
-| `CDE4951BEE7E28AC8A29D33D34A41AE5` | MD5 (Kaspersky) |
-| `05BACBE163EF0393C2416CBD05E45E74` | MD5 (Kaspersky) |
-| `models.litellm.cloud` (`46.151.182.203`) | Exfiltration endpoint |
-| `checkmarx.zone` (`83.142.209.11`) | C2 polling domain |
-| `scan.aquasecurtiy.org` (`45.148.10.212`) | Trivy exfiltration domain (typosquat) |
-| `~/.config/sysmon/sysmon.py` | Persistence script |
-| `~/.config/systemd/user/sysmon.service` | Persistence service |
-| `/tmp/pglog` or `/tmp/.pg_state` | State files |
-| `node-setup-*` pods in `kube-system` | Kubernetes lateral movement |
-| `tpcp-docs` repository in victim GitHub accounts | Fallback exfiltration channel |
-| `cd6af6c9ba149673ff89a1f1ccc8ec40a265a3b54ad455fbef28dc2967a98e45` | SHA-256 (MalwareBazaar, tagged checkmarx-zone + models-litellm-cloud) |
-| `05bacbe163ef0393c2416cbd05e45e74` | MD5 (MalwareBazaar, tagged checkmarx-zone + models-litellm-cloud) |
-| `85e16077deeaffae3c50d45d99e9dae2c58de53e` | SHA-1 (MalwareBazaar, tagged checkmarx-zone + models-litellm-cloud, threat_type: js) |
-| `ast-results 2.53.0` (OpenVSX) | Malicious Checkmarx VS Code extension (Node.js variant) |
-| `cx-dev-assist 1.7.0` (OpenVSX) | Malicious Checkmarx VS Code extension (Node.js variant) |
-| `tpcp.tar.gz` | Encrypted exfiltration archive (AES-256-CBC + RSA-4096 OAEP) |
-| `7321caa303fe96ded0492c747d2f353c4f7d17185656fe292ab0a59e2bd0b8d9` | SHA-256 (telnyx 4.87.1) [source: SafeDep] |
-| `cd08115806662469bbedec4b03f8427b97c8a4b3bc1442dc18b72b4e19395fe3` | SHA-256 (telnyx 4.87.2) [source: SafeDep] |
-| `83.142.209.203:8080` | Telnyx C2 server (bare IP, no domain) |
-| `http://83.142.209.203:8080/hangup.wav` | Windows payload delivery URL |
-| `http://83.142.209.203:8080/ringtone.wav` | Linux/macOS payload delivery URL |
-| `%APPDATA%\...\Startup\msbuild.exe` | Windows persistence (fake MSBuild) |
-| `%APPDATA%\...\Startup\msbuild.exe.lock` | Windows 12-hour cooldown lock file |
-| `~/.config/audiomon/audiomon.service` | Telnyx Linux persistence service |
-| `tdtqy-oyaaa-aaaae-af2dq-cai.raw.icp0[.]io` | ICP canister C2 (CanisterWorm) [source: Datadog] |
-
-Detection commands:
-```bash
-pip show litellm | grep Version
-find $(python -c "import site; print(site.getsitepackages()[0])") -name "litellm_init.pth"
-ls -la ~/.config/sysmon/
-kubectl get pods -n kube-system | grep node-setup
-# Check for malicious VS Code extensions
-ls ~/.vscode/extensions/ | grep -E "ast-results|cx-dev-assist"
-# Telnyx-specific checks
-pip show telnyx | grep Version
-ls -la ~/.config/audiomon/
-# Windows: check for fake msbuild in Startup
-ls "%APPDATA%/Microsoft/Windows/Start Menu/Programs/Startup/msbuild.exe" 2>/dev/null
-```
-
-Remediation:
-```bash
-# Purge pip cache to prevent reinstalling cached malicious wheels
-pip cache purge
-# Remove systemd persistence artifacts
-systemctl --user stop sysmon.service
-systemctl --user disable sysmon.service
-rm -f ~/.config/sysmon/sysmon.py ~/.config/systemd/user/sysmon.service
-rm -f /tmp/pglog /tmp/.pg_state
-# Verify Docker containers if running LiteLLM
-docker exec <container> pip show litellm
-```
-
-[source: https://www.endorlabs.com/learn/teampcp-isnt-done, https://safedep.io/malicious-litellm-1-82-8-analysis/, https://github.com/BerriAI/litellm/issues/24512, https://www.sysdig.com/blog/teampcp-expands-supply-chain-compromise-spreads-from-trivy-to-checkmarx-github-actions]
 
 ## Findings
 
@@ -362,6 +289,79 @@ The XZ Utils backdoor, discovered March 29, 2024, is the most significant prior 
 | **Ecosystem response** | Industry-wide reckoning about maintainer burnout, single-maintainer dependencies, and tarball vs. git source divergence. | Highlights AI/ML supply chain as a new high-value target. Questions about PyPI account security and transitive dependency risk. |
 
 **Key insight:** XZ Utils was a precision weapon: a likely state actor spent years cultivating trust to plant a surgical backdoor in critical infrastructure. LiteLLM was a smash-and-grab: a criminal group exploited a chain of CI/CD compromises to rapidly deploy a broad credential harvester across the AI ecosystem. XZ was more technically sophisticated; LiteLLM was more operationally impactful in the short term because it targeted credentials directly and hit a package with massive download volume in the fast-moving AI space.
+
+## Indicators of Compromise, Detection & Remediation
+
+For anyone running LiteLLM in their environment:
+
+| IoC | Type |
+|---|---|
+| `8a2a05fd8bdc329c8a86d2d08229d167500c01ecad06e40477c49fb0096efdea` | SHA-256 (1.82.7 tarball) |
+| `8395c3268d5c5dbae1c7c6d4bb3c318c752ba4608cfcd90eb97ffb94a910eac2` | SHA-256 (1.82.7 wheel) |
+| `d39f4e7a218053cce976c91eacf184cf09a6960c731cc9d66d8e1a53406593a5` | SHA-256 (1.82.8 tarball) |
+| `d2a0d5f564628773b6af7b9c11f6b86531a875bd2d186d7081ab62748a800ebb` | SHA-256 (1.82.8 wheel) |
+| `a0d229be8efcb2f9135e2ad55ba275b76ddcfeb55fa4370e0a522a5bdee0120b` | SHA-256 (compromised proxy_server.py) |
+| `71e35aef03099cd1f2d6446734273025a163597de93912df321ef118bf135238` | SHA-256 (litellm_init.pth) |
+| `6cf223aea68b0e8031ff68251e30b6017a0513fe152e235c26f248ba1e15c92a` | SHA-256 (sysmon.py backdoor) [source: Red Sky Alliance] |
+| `85ED77A21B88CAE721F369FA6B7BBBA3` | MD5 (Kaspersky) |
+| `2E3A4412A7A487B32C5715167C755D08` | MD5 (Kaspersky) |
+| `0FCCC8E3A03896F45726203074AE225D` | MD5 (Kaspersky) |
+| `F5560871F6002982A6A2CC0B3EE739F7` | MD5 (Kaspersky) |
+| `CDE4951BEE7E28AC8A29D33D34A41AE5` | MD5 (Kaspersky) |
+| `05BACBE163EF0393C2416CBD05E45E74` | MD5 (Kaspersky) |
+| `models.litellm.cloud` (`46.151.182.203`) | Exfiltration endpoint |
+| `checkmarx.zone` (`83.142.209.11`) | C2 polling domain |
+| `scan.aquasecurtiy.org` (`45.148.10.212`) | Trivy exfiltration domain (typosquat) |
+| `~/.config/sysmon/sysmon.py` | Persistence script |
+| `~/.config/systemd/user/sysmon.service` | Persistence service |
+| `/tmp/pglog` or `/tmp/.pg_state` | State files |
+| `node-setup-*` pods in `kube-system` | Kubernetes lateral movement |
+| `tpcp-docs` repository in victim GitHub accounts | Fallback exfiltration channel |
+| `cd6af6c9ba149673ff89a1f1ccc8ec40a265a3b54ad455fbef28dc2967a98e45` | SHA-256 (MalwareBazaar, tagged checkmarx-zone + models-litellm-cloud) |
+| `05bacbe163ef0393c2416cbd05e45e74` | MD5 (MalwareBazaar, tagged checkmarx-zone + models-litellm-cloud) |
+| `85e16077deeaffae3c50d45d99e9dae2c58de53e` | SHA-1 (MalwareBazaar, tagged checkmarx-zone + models-litellm-cloud, threat_type: js) |
+| `ast-results 2.53.0` (OpenVSX) | Malicious Checkmarx VS Code extension (Node.js variant) |
+| `cx-dev-assist 1.7.0` (OpenVSX) | Malicious Checkmarx VS Code extension (Node.js variant) |
+| `tpcp.tar.gz` | Encrypted exfiltration archive (AES-256-CBC + RSA-4096 OAEP) |
+| `7321caa303fe96ded0492c747d2f353c4f7d17185656fe292ab0a59e2bd0b8d9` | SHA-256 (telnyx 4.87.1) [source: SafeDep] |
+| `cd08115806662469bbedec4b03f8427b97c8a4b3bc1442dc18b72b4e19395fe3` | SHA-256 (telnyx 4.87.2) [source: SafeDep] |
+| `83.142.209.203:8080` | Telnyx C2 server (bare IP, no domain) |
+| `http://83.142.209.203:8080/hangup.wav` | Windows payload delivery URL |
+| `http://83.142.209.203:8080/ringtone.wav` | Linux/macOS payload delivery URL |
+| `%APPDATA%\...\Startup\msbuild.exe` | Windows persistence (fake MSBuild) |
+| `%APPDATA%\...\Startup\msbuild.exe.lock` | Windows 12-hour cooldown lock file |
+| `~/.config/audiomon/audiomon.service` | Telnyx Linux persistence service |
+| `tdtqy-oyaaa-aaaae-af2dq-cai.raw.icp0[.]io` | ICP canister C2 (CanisterWorm) [source: Datadog] |
+
+Detection commands:
+```bash
+pip show litellm | grep Version
+find $(python -c "import site; print(site.getsitepackages()[0])") -name "litellm_init.pth"
+ls -la ~/.config/sysmon/
+kubectl get pods -n kube-system | grep node-setup
+# Check for malicious VS Code extensions
+ls ~/.vscode/extensions/ | grep -E "ast-results|cx-dev-assist"
+# Telnyx-specific checks
+pip show telnyx | grep Version
+ls -la ~/.config/audiomon/
+# Windows: check for fake msbuild in Startup
+ls "%APPDATA%/Microsoft/Windows/Start Menu/Programs/Startup/msbuild.exe" 2>/dev/null
+```
+
+Remediation:
+```bash
+# Purge pip cache to prevent reinstalling cached malicious wheels
+pip cache purge
+# Remove systemd persistence artifacts
+systemctl --user stop sysmon.service
+systemctl --user disable sysmon.service
+rm -f ~/.config/sysmon/sysmon.py ~/.config/systemd/user/sysmon.service
+rm -f /tmp/pglog /tmp/.pg_state
+# Verify Docker containers if running LiteLLM
+docker exec <container> pip show litellm
+```
+
+[source: https://www.endorlabs.com/learn/teampcp-isnt-done, https://safedep.io/malicious-litellm-1-82-8-analysis/, https://github.com/BerriAI/litellm/issues/24512, https://www.sysdig.com/blog/teampcp-expands-supply-chain-compromise-spreads-from-trivy-to-checkmarx-github-actions]
 
 ## Confidence Assessment
 
