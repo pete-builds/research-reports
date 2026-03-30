@@ -1,8 +1,7 @@
 ---
 title: "LiteLLM PyPI Supply Chain Attack: Full Analysis and Incident Tracker"
-slug: litellm-pypi-supply-chain-attack
 date: 2026-03-24
-updated: 2026-03-30T11:07:00-04:00
+updated: 2026-03-30 11:07 AM ET / 3:07 PM UTC
 summary: "On March 24, 2026, the LiteLLM Python package (versions 1.82.7 and 1.82.8) was compromised by threat actor TeamPCP via hijacked PyPI credentials, deploying a three-stage credential stealer that harvested SSH keys, cloud credentials, and crypto wallets from systems with ~97 million monthly downloads. On March 27, TeamPCP struck again, compromising the Telnyx PyPI package using credentials harvested from the LiteLLM attack. On March 30, Databricks is investigating an alleged connection to the campaign; SANS Stormcast reports TeamPCP is brokering stolen credentials on BreachForums; HivePro reveals TeamPCP's December 2025 worm campaign compromised 60,000+ servers globally. This report analyzes the attack chain and compares it to the 2024 XZ Utils backdoor."
 ---
 
