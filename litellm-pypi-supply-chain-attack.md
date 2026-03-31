@@ -1,19 +1,19 @@
 ---
 title: "LiteLLM PyPI Supply Chain Attack: Admin Guide and Incident Tracker"
 date: 2026-03-24
-updated: 2026-03-30 1:10 PM ET / 5:10 PM UTC
-polled: 2026-03-30 10:05 PM ET
+updated: 2026-03-31 7:07 AM ET / 11:07 AM UTC
+polled: 2026-03-31 7:07 AM ET
 summary: "On March 24, 2026, LiteLLM versions 1.82.7 and 1.82.8 on PyPI were backdoored by TeamPCP using stolen CI/CD credentials. The malware harvested SSH keys, cloud credentials, API keys, and crypto wallets. This guide is for LiteLLM admins: is it safe to update? What do you need to know? What should you check and rotate?"
 ---
 
-**TL;DR:** LiteLLM versions 1.82.7 and 1.82.8 on PyPI were backdoored on March 24 by TeamPCP using credentials stolen from a compromised Trivy security scanner. The malware harvested SSH keys, cloud credentials, API keys, and crypto wallets from every system that ran `pip install` during a ~5 hour window (47,000 downloads). Three days later, TeamPCP used those stolen credentials to compromise the Telnyx package too. No clean LiteLLM release yet. Pin to v1.82.6 and rotate everything.
+**TL;DR:** LiteLLM versions 1.82.7 and 1.82.8 on PyPI were backdoored on March 24 by TeamPCP using credentials stolen from a compromised Trivy security scanner. The malware harvested SSH keys, cloud credentials, API keys, and crypto wallets from every system that ran `pip install` during a ~5 hour window (47,000 downloads). Three days later, TeamPCP used those stolen credentials to compromise the Telnyx package too. LiteLLM v1.83.0 appeared on PyPI on March 31, but lacks a GitHub tag, release notes, or official announcement that releases have resumed. Pin to v1.82.6 until BerriAI confirms the Mandiant review is complete.
 
 ## Current Status
 
-*Last substantive update: March 30, 2026, 1:10 PM ET.*
-*Last polled for new developments: March 30, 2026, 9:24 PM ET.*
+*Last substantive update: March 31, 2026, 7:07 AM ET.*
+*Last polled for new developments: March 31, 2026, 7:07 AM ET.*
 
-- **Latest safe version:** LiteLLM v1.82.6 remains the latest on PyPI (8 days since last release). No clean release published yet. GitHub releases at v1.82.6.dev2. All new releases paused pending Mandiant forensic review.
+- **New: LiteLLM v1.83.0 published on PyPI (March 31).** First release since the attack. Merged via PR #24840 by BerriAI employee `yuneng-berri`, alongside CI/CD v2 hardening (PR #24839). Community wheel analysis found no known IOCs. However: no GitHub release tag exists (latest tag still `v1.82.6.rc.2`), no release notes published, no official announcement that releases have resumed, and the security blog still says releases are paused. GitHub issue #24843 asking about legitimacy has no maintainer response. **Recommendation: do not upgrade yet.** Pin to v1.82.6 until BerriAI creates a GitHub tag, publishes release notes, and confirms the Mandiant review concluded. [source: https://pypi.org/project/litellm/1.83.0/, https://github.com/BerriAI/litellm/pull/24840, https://github.com/BerriAI/litellm/issues/24843, https://docs.litellm.ai/blog/ci-cd-v2-improvements]
 - **C2 infrastructure:** Exfiltration domain `litellm.cloud` takedown still stalled at registrar level. Domain may still be collecting data from systems with active persistence. Telnyx C2 at `83.142.209.203:8080` status unknown.
 - **Active investigation:** Databricks investigating alleged compromise connected to TeamPCP campaign (CybersecurityNews, not confirmed). Mandiant forensic audit verified all LiteLLM releases v1.78.0 through v1.82.6 as clean. IETF Internet-Draft CB4A submitted March 29, directly motivated by this campaign.
 - **No arrests.** FBI has issued a public warning. CISA added CVE-2026-33634 to KEV catalog (April 9 federal deadline). Singapore CSA, UK NCSC, NHS England, German BSI all published advisories.
