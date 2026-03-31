@@ -1,8 +1,8 @@
 ---
 title: "LiteLLM PyPI Supply Chain Attack: Admin Guide and Incident Tracker"
 date: 2026-03-24
-updated: 2026-03-31 7:07 AM ET / 11:07 AM UTC
-polled: 2026-03-31 7:07 AM ET
+updated: 2026-03-31 9:14 AM ET / 1:14 PM UTC
+polled: 2026-03-31 9:14 AM ET
 summary: "On March 24, 2026, LiteLLM versions 1.82.7 and 1.82.8 on PyPI were backdoored by TeamPCP using stolen CI/CD credentials. The malware harvested SSH keys, cloud credentials, API keys, and crypto wallets. This guide is for LiteLLM admins: is it safe to update? What do you need to know? What should you check and rotate?"
 ---
 
@@ -10,8 +10,8 @@ summary: "On March 24, 2026, LiteLLM versions 1.82.7 and 1.82.8 on PyPI were bac
 
 ## Current Status
 
-*Last substantive update: March 31, 2026, 7:07 AM ET.*
-*Last polled for new developments: March 31, 2026, 7:07 AM ET.*
+*Last substantive update: March 31, 2026, 9:14 AM ET.*
+*Last polled for new developments: March 31, 2026, 9:14 AM ET.*
 
 - **New: LiteLLM v1.83.0 published on PyPI (March 31).** First release since the attack. Merged via PR #24840 by BerriAI employee `yuneng-berri`, alongside CI/CD v2 hardening (PR #24839). Community wheel analysis found no known IOCs. However: no GitHub release tag exists (latest tag still `v1.82.6.rc.2`), no release notes published, no official announcement that releases have resumed, and the security blog still says releases are paused. GitHub issue #24843 asking about legitimacy has no maintainer response. **Recommendation: do not upgrade yet.** Pin to v1.82.6 until BerriAI creates a GitHub tag, publishes release notes, and confirms the Mandiant review concluded. [source: https://pypi.org/project/litellm/1.83.0/, https://github.com/BerriAI/litellm/pull/24840, https://github.com/BerriAI/litellm/issues/24843, https://docs.litellm.ai/blog/ci-cd-v2-improvements]
 - **C2 infrastructure:** Exfiltration domain `litellm.cloud` takedown still stalled at registrar level. Domain may still be collecting data from systems with active persistence. Telnyx C2 at `83.142.209.203:8080` status unknown.
@@ -86,6 +86,7 @@ An ironic flaw: the `.pth` launcher spawned a child Python process via `subproce
 
 | Time (ET) | Event |
 |---|---|
+| March 31, early morning | **LiteLLM v1.83.0 published on PyPI.** First release since the attack. Merged via PR #24840 by BerriAI employee `yuneng-berri` alongside CI/CD v2 hardening (PR #24839). Community wheel analysis (issue #24843) found no known IOCs. However: no GitHub release tag (latest tag still `v1.82.6.rc.2`), no release notes, no official announcement, security blog still says releases are paused. BerriAI CEO posted on LinkedIn but no formal channel update. Recommendation: hold at v1.82.6 until BerriAI confirms Mandiant review complete and creates a GitHub tag. [source: https://pypi.org/project/litellm/1.83.0/, https://github.com/BerriAI/litellm/pull/24840, https://github.com/BerriAI/litellm/issues/24843] |
 | March 30, afternoon | **SANS ISC Update 004** (Kenneth Hartman): TeamPCP running dual ransomware operations with CipherForce (proprietary, high-value targets) and Vect (mass affiliate via BreachForums). Lapsus$ releases claimed 3 GB AstraZeneca data archive for free after failing to find buyers; Cybernews partially verified contents including internal GitHub user data, employee records from clinical research subsidiaries, and source code tree structures. Supply chain pause now at 96+ hours (longest since campaign began). RubyGems, crates.io, Maven Central checked, zero TeamPCP IOCs found. CISA KEV deadline now 9 days away. [source: https://isc.sans.edu/forums/diary/32846/, https://www.securityweek.com/extortion-group-claims-it-hacked-astrazeneca/] |
 | March 30, afternoon | SANS Stormcast reports TeamPCP brokering stolen credentials on BreachForums and collaborating with ransomware actors. HivePro reveals December 2025 CanisterWorm campaign (60,000+ servers). Coverage now 90+ outlets. [source: https://isc.sans.edu/podcastdetail/9870, https://hivepro.com/threat-advisory/teampcp-automated-supply-chain-from-trivy-to-litellm-in-a-multi-ecosystem-breach/] |
 | March 30 | Databricks investigating alleged compromise connected to TeamPCP campaign (not confirmed). [source: https://cybersecuritynews.com/databricks-teampcp-supply-chain/] |
