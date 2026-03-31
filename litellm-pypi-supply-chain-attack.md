@@ -2,7 +2,7 @@
 title: "LiteLLM PyPI Supply Chain Attack: Admin Guide and Incident Tracker"
 date: 2026-03-24
 updated: 2026-03-30 1:10 PM ET / 5:10 PM UTC
-polled: 2026-03-30 8:24 PM ET
+polled: 2026-03-30 9:24 PM ET
 summary: "On March 24, 2026, LiteLLM versions 1.82.7 and 1.82.8 on PyPI were backdoored by TeamPCP using stolen CI/CD credentials. The malware harvested SSH keys, cloud credentials, API keys, and crypto wallets. This guide is for LiteLLM admins: is it safe to update? What do you need to know? What should you check and rotate?"
 ---
 
@@ -11,7 +11,7 @@ summary: "On March 24, 2026, LiteLLM versions 1.82.7 and 1.82.8 on PyPI were bac
 ## Current Status
 
 *Last substantive update: March 30, 2026, 1:10 PM ET.*
-*Last polled for new developments: March 30, 2026, 8:24 PM ET.*
+*Last polled for new developments: March 30, 2026, 9:24 PM ET.*
 
 - **Latest safe version:** LiteLLM v1.82.6 remains the latest on PyPI (8 days since last release). No clean release published yet. GitHub releases at v1.82.6.dev2. All new releases paused pending Mandiant forensic review.
 - **C2 infrastructure:** Exfiltration domain `litellm.cloud` takedown still stalled at registrar level. Domain may still be collecting data from systems with active persistence. Telnyx C2 at `83.142.209.203:8080` status unknown.
