@@ -2,7 +2,7 @@
 title: "LiteLLM PyPI Supply Chain Attack: Admin Guide and Incident Tracker"
 date: 2026-03-24
 updated: 2026-03-31 9:29 AM ET / 1:29 PM UTC
-polled: 2026-03-31 10:10 AM ET
+polled: 2026-03-31 11:10 AM ET
 summary: "On March 24, 2026, LiteLLM versions 1.82.7 and 1.82.8 on PyPI were backdoored by TeamPCP using stolen CI/CD credentials. The malware harvested SSH keys, cloud credentials, API keys, and crypto wallets. This guide is for LiteLLM admins: is it safe to update? What do you need to know? What should you check and rotate?"
 ---
 
@@ -11,7 +11,7 @@ summary: "On March 24, 2026, LiteLLM versions 1.82.7 and 1.82.8 on PyPI were bac
 ## Current Status
 
 *Last substantive update: March 31, 2026, 9:29 AM ET.*
-*Last polled for new developments: March 31, 2026, 10:10 AM ET.*
+*Last polled for new developments: March 31, 2026, 11:10 AM ET.*
 
 - **LiteLLM v1.83.0 published on PyPI (March 31).** First release since the attack. Version bump only (PR #24840 by `yuneng-berri`), merged alongside CI/CD v2 hardening (PR #24839 by `krrish-berri-2`). Published via the new Trusted Publishing pipeline (OIDC, no long-lived tokens). Community wheel analysis (issue #24843 by `pyozzi-toss`) found no known IOCs; wheel SHA-256: `88c536d339248f3987571493015784671ba3f193a328e1ea6780dbebaa2094a8`. However: still no GitHub release tag (latest tag remains `v1.82.6.rc.2`), no release notes published, security blog still says releases are paused, and issue #24843 has no maintainer response. BerriAI's CEO posted on LinkedIn but has not updated official channels. Community member `catmeme` noted the disconnect: "I was expecting more communication on the first legit release after the supply chain attack." **Recommendation: cautious users should hold at v1.82.6** until BerriAI creates a GitHub tag, publishes release notes, and confirms the Mandiant review concluded. Risk-tolerant users can consider v1.83.0 after verifying the wheel hash. [source: https://pypi.org/project/litellm/1.83.0/, https://github.com/BerriAI/litellm/pull/24840, https://github.com/BerriAI/litellm/pull/24839, https://github.com/BerriAI/litellm/issues/24843, https://docs.litellm.ai/blog/ci-cd-v2-improvements]
 - **CI/CD v2 hardening (March 30 blog).** BerriAI published specifics of the new release pipeline: (1) security scans run in isolated environments, (2) validation and release separated into different repositories, (3) Trusted Publishing for PyPI (OIDC, no long-lived credentials), (4) immutable Docker release tags. Planned but not yet implemented: SLSA Build Provenance and OpenSSF Scorecard/Allstar adoption. The v1.83.0 release is the first to use this pipeline. [source: https://docs.litellm.ai/blog/ci-cd-v2-improvements]
