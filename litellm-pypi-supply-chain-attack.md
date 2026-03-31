@@ -2,7 +2,7 @@
 title: "LiteLLM PyPI Supply Chain Attack: Admin Guide and Incident Tracker"
 date: 2026-03-24
 updated: 2026-03-31 12:11 PM ET / 4:11 PM UTC
-polled: 2026-03-31 12:11 PM ET
+polled: 2026-03-31 1:10 PM ET
 summary: "On March 24, 2026, LiteLLM versions 1.82.7 and 1.82.8 on PyPI were backdoored by TeamPCP using stolen CI/CD credentials. The malware harvested SSH keys, cloud credentials, API keys, and crypto wallets. This guide is for LiteLLM admins: is it safe to update? What do you need to know? What should you check and rotate?"
 ---
 
@@ -11,7 +11,7 @@ summary: "On March 24, 2026, LiteLLM versions 1.82.7 and 1.82.8 on PyPI were bac
 ## Current Status
 
 *Last substantive update: March 31, 2026, 12:11 PM ET.*
-*Last polled for new developments: March 31, 2026, 12:11 PM ET.*
+*Last polled for new developments: March 31, 2026, 1:10 PM ET.*
 
 - **BerriAI security blog updated: release freeze officially lifted.** The security blog at `docs.litellm.ai/blog/security-update-march-2026` has been updated to confirm v1.83.0 as a clean release published March 30 via the new CI/CD v2 pipeline, and states the release freeze is lifted. The blog now references "Townhall updates" on March 27 and describes the CI/CD v2 pipeline as adding "isolated environments, stronger security gates." The blog also confirms the repository codebase was never compromised. This resolves a key communication gap noted in prior updates, though it was done silently (no changelog or announcement of the blog edit). [source: https://docs.litellm.ai/blog/security-update-march-2026]
 - **LiteLLM v1.83.0 published on PyPI (March 31).** First release since the attack. Version bump only (PR #24840 by `yuneng-berri`), merged alongside CI/CD v2 hardening (PR #24839 by `krrish-berri-2`). Published via the new Trusted Publishing pipeline (OIDC, no long-lived tokens). Community wheel analysis (issue #24843 by `pyozzi-toss`) found no known IOCs; wheel SHA-256: `88c536d339248f3987571493015784671ba3f193a328e1ea6780dbebaa2094a8`. However: still no GitHub release tag (latest tag remains `v1.82.6.rc.2`), no release notes published, and issue #24843 has no maintainer response. Community member `catmeme` posted detailed criticism at 8:15 AM ET: "I was expecting more communication on the first legit release after the supply chain attack." **Recommendation: cautious users should hold at v1.82.6** until BerriAI creates a GitHub tag, publishes release notes, and confirms the Mandiant review concluded. Risk-tolerant users can consider v1.83.0 after verifying the wheel hash. [source: https://pypi.org/project/litellm/1.83.0/, https://github.com/BerriAI/litellm/pull/24840, https://github.com/BerriAI/litellm/pull/24839, https://github.com/BerriAI/litellm/issues/24843, https://docs.litellm.ai/blog/ci-cd-v2-improvements]
