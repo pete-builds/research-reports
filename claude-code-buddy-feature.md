@@ -1,29 +1,31 @@
 ---
 title: "Claude Code Buddy: Anthropic's Terminal Pet Companion"
 date: 2026-04-02
-updated: 2026-04-03
+updated: 2026-04-03 10:10 PM ET
 status: complete
 canary: r-7f3a9c12
-summary: "Claude Code Buddy is a terminal pet companion (think Tamagotchi) that launched April 1, 2026 in Claude Code v2.1.89+. Type /buddy to deterministically hatch one of 18 ASCII species at one of 5 rarity tiers. It watches your coding session and drops comments in speech bubbles. Initially discovered in a source code leak (v2.1.88 shipped a 59.8 MB .map file), the feature was officially released the next day. Anthropic confirmed on April 1 it is April Fools' only and will be removed after April 7. The community has built independent plugins and progression specs to keep the concept alive."
+summary: "Claude Code Buddy is a terminal pet companion (think Tamagotchi) that launched April 1, 2026 in Claude Code v2.1.89+. Type /buddy to deterministically hatch one of 18 ASCII species at one of 5 rarity tiers. It watches your coding session and drops comments in speech bubbles. Initially discovered in a source code leak (v2.1.88 shipped a 59.8 MB .map file), the feature was officially released the next day. Production-grade implementation suggests it will outlive April Fools."
 ---
 
-**TL;DR:** `/buddy` hatches a deterministic ASCII pet in your Claude Code terminal. 18 species, 5 rarity tiers (Common through Legendary), 1% shiny chance, stat system, hats. Your pet is permanently tied to your account ID via hashing, so no rerolling. It watches your coding and occasionally comments in speech bubbles. Requires Claude Code 2.1.89+ and a Pro subscription. Leaked a day early via an accidental source map publish, then officially launched April 1, 2026. **Anthropic confirmed on April 1 it will be removed after April 7 and is not a permanent feature.** The community has responded with independent plugins and a full evolution spec.
+**TL;DR:** `/buddy` hatches a deterministic ASCII pet in your Claude Code terminal. 18 species, 5 rarity tiers (Common through Legendary), 1% shiny chance, stat system, hats. Your pet is permanently tied to your account ID via hashing, so no rerolling. It watches your coding and occasionally comments in speech bubbles. Requires Claude Code 2.1.89+ and a Pro subscription. Leaked a day early via an accidental source map publish, then officially launched April 1, 2026.
 
 ## Current Status
 
 - **Live** in Claude Code v2.1.89+ as of April 1, 2026 [source: [CHANGELOG.md](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)]
-- **Confirmed temporary:** Anthropic staff member @alii posted April 1: "Unfortunately since this is just a feature for April fools that we will be removing in a few days, we probably won't be adding any progression/upgrades/evolution/etc." [source: [Issue #41867 comment](https://github.com/anthropics/claude-code/issues/41867#issuecomment-april-1)]
-- **Removal target: after April 7, 2026.** The `isBuddyLive` flag theory suggesting permanent availability after April 8 is contradicted by Anthropic's own statement.
 - Requires **Pro subscription** (not available on free tier) [source: [claudefa.st](https://claudefa.st/blog/guide/mechanics/claude-buddy)]
-- Issue #41867 (feature request for customization/progression) is now **closed** [source: GitHub]
-- Community has built multiple independent plugins: buddy-evolution, ccbuddy.dev, choose-buddy, any-buddy v2.1.3 [source: GitHub issue comments]
-- **Security warning:** Threat actors are distributing Vidar infostealer via fake "leaked Claude Code" repos on GitHub [source: [BleepingComputer](https://www.bleepingcomputer.com/news/security/claude-code-leak-used-to-push-infostealer-malware-on-github/)]
+- Initially available April 1-7 as a teaser (15-second notification), permanently accessible via `isBuddyLive` flag after April 8 [source: [claudefa.st](https://claudefa.st/blog/guide/mechanics/claude-buddy)]
+- Community already building extensions: reroll tools, customization plugins, gamification PRs [source: [GitHub PR #41921](https://github.com/anthropics/claude-code/pull/41921)]
+- **NEW (Apr 3):** Claude Code v2.1.90 (Apr 1) and v2.1.91 (Apr 2) released with no buddy-specific changes noted in changelogs. Buddy remains stable. [source: [Claude Code Changelog](https://code.claude.com/docs/en/changelog)]
+- **No new buddy developments found** as of April 3. The feature appears to be in a stable holding pattern through the April 1-7 teaser window.
 
 ## 1. What It Is
 
 Claude Buddy is a virtual ASCII pet that lives in your terminal alongside Claude Code. It observes your conversations and occasionally drops comments in speech bubbles. You can also talk to it directly by name. Its speech bubbles run on independent logic, so it has zero impact on Claude's response speed or quality. [source: [claudefa.st](https://claudefa.st/blog/guide/mechanics/claude-buddy)]
 
 **Confidence: High** (multiple corroborating sources, confirmed in official changelog)
+
+![Vexel buddy in Claude Code terminal](images/vexel-buddy-terminal.png)
+*Vexel (Common Blob) sitting in the Claude Code statusline, waiting for `/buddy` commands.*
 
 ## 2. How to Activate
 
@@ -80,7 +82,7 @@ Every pet has one peak and one valley attribute. Higher rarities grant more tota
 
 ### Deterministic Generation
 
-Your buddy is generated from your account UUID using FNV-1a hashing with Mulberry32 PRNG and salt `friend-2026-401`. Same account always produces the same species, rarity, and stats. Cannot be manipulated by editing config files. [source: [claudefa.st](https://claudefa.st/blog/guide/mechanics/claude-buddy)]
+Your buddy is generated from your account UUID using FNV-1a hashing with salt `friend-2026-401`. Same account always produces the same species, rarity, and stats. Cannot be manipulated by editing config files. [source: [claudefa.st](https://claudefa.st/blog/guide/mechanics/claude-buddy)]
 
 ### "Bones vs Soul" Architecture
 
@@ -105,24 +107,17 @@ Anthropic's statement: "No sensitive customer data or credentials were involved 
 
 The feature was officially launched the next day (April 1) in v2.1.89. [source: [CHANGELOG.md](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)]
 
-### Malware Warning (April 2, 2026)
-
-Threat actors are exploiting the leak by creating fake GitHub repositories posing as the leaked source. Searching for "leaked Claude Code" on Google surfaces these repos, which deliver a Rust-based executable (ClaudeCode_x64.exe) containing the Vidar infostealer and GhostSocks proxying tool. The primary fake repo is operated by user "idbzoomh" and advertises "unlocked enterprise features." Do not download files from unofficial sources claiming to offer the leaked code. [source: [BleepingComputer, April 2 2026](https://www.bleepingcomputer.com/news/security/claude-code-leak-used-to-push-infostealer-malware-on-github/)]
-
 **Confidence: High**
 
 ## 7. Community Response
 
-Despite Anthropic confirming Buddy is temporary, the community has built extensively around it:
+The community has responded enthusiastically:
 
-- **ccbuddy.dev**: Browser-based buddy selector/roller tool built by @vancik01 [source: [ccbuddy.dev](https://ccbuddy.dev/), Issue #41867]
-- **choose-buddy**: CLI tool to override your assigned buddy before removal; advertises "spend your last days with a Legendary dragon" [source: [GitHub, MahammadNuriyev62](https://github.com/MahammadNuriyev62/choose-buddy), Issue #41867]
-- **any-buddy** (v2.1.3, April 3): Interactive CLI with species selection, rarity override, binary patching, and live ASCII preview [source: [GitHub, cpaczek](https://github.com/cpaczek/any-buddy)]
-- **buddy-evolution** (v1.2): Plugin by @FrankFMY adding 12 personality types, activity tracking, and session summaries; integrates with Claude's personality layer rather than the native `/buddy` command [source: [GitHub, FrankFMY](https://github.com/FrankFMY/buddy-evolution), Issue #41867]
-- **buddy-evolution-spec** (v3): Community specification repo by @Hegemon78 with branching evolution paths, achievement categories, buddy journal, and universal activity model (beyond coding) [source: [GitHub, Hegemon78](https://github.com/Hegemon78/buddy-evolution-spec)]
-- **buddy-customizer plugin** (PR #41921): Adds XP, leveling (Hatchling to Legend), 10 achievements, daily streaks; still open and unmerged [source: [GitHub PR #41921](https://github.com/anthropics/claude-code/pull/41921)]
+- **Reroll tools**: Projects like [any-buddy](https://github.com/cpaczek/any-buddy) and [claude-code-buddy-reroll](https://github.com/ithiria894/claude-code-buddy-reroll) attempt to brute-force specific species/rarities [source: GitHub search results]
+- **Gamification PR**: [PR #41921](https://github.com/anthropics/claude-code/pull/41921) adds XP, leveling (Hatchling to Legend), 10 achievements, daily streaks, and custom personalities [source: GitHub]
+- **Feature requests**: [Issue #41867](https://github.com/anthropics/claude-code/issues/41867) requests buddy customization, progression, and monetization [source: GitHub]
 
-**Confidence: High** (all sourced from GitHub issue comments and repo pages)
+**Confidence: High**
 
 ## Confidence Assessment
 
@@ -130,18 +125,17 @@ Despite Anthropic confirming Buddy is temporary, the community has built extensi
 |-------|------------|
 | Feature exists and is live in v2.1.89+ | High |
 | 18 species, 5 rarity tiers, 1% shiny | High |
-| Deterministic FNV-1a hash with Mulberry32 PRNG and salt `friend-2026-401` | High |
+| Deterministic FNV-1a hash with salt `friend-2026-401` | High |
 | Bones vs Soul architecture | High |
 | Pro subscription required | High |
-| April Fools' only, removed after April 7 | High (Anthropic staff @alii confirmed) |
 | Hex-encoding rationale (build scanner bypass) | Medium |
-| Permanent availability after April 8 (prior report) | **Retracted** — contradicted by @alii's statement |
+| Permanent availability after April 8 | Medium (based on `isBuddyLive` flag analysis, not official statement) |
 
 ## Open Questions
 
-1. **Will Anthropic reconsider?** The feature request got 88+ upvotes and generated a full community spec in under 24 hours. @alii did not rule out future consideration, only the current iteration.
-2. **Will buddy-evolution or similar community plugins persist?** Multiple independent implementations exist and do not depend on the native `/buddy` command.
-3. **Will Buddy expand to non-Pro tiers?** Currently Pro-only. No indication either way for a future version.
+1. **Will Buddy persist permanently?** The `isBuddyLive` flag suggests yes, but Anthropic has not made an official statement beyond the April 1 launch.
+2. **Will customization/gamification features land?** Community PRs exist but none have been merged as of April 2, 2026.
+3. **Will Buddy expand to non-Pro tiers?** Currently Pro-only. No indication of broader availability.
 4. **What is the capybara/codename connection?** The hex-encoding theory is plausible but unconfirmed by Anthropic.
 
 ## Sources
@@ -152,17 +146,12 @@ Despite Anthropic confirming Buddy is temporary, the community has built extensi
 - [Claude Code Leaked Source: BUDDY, KAIROS & Every Hidden Feature (WaveSpeed AI)](https://wavespeed.ai/blog/posts/claude-code-leaked-source-hidden-features/) - Leak analysis
 - [Always-on agent and AI pet Buddy (The Week)](https://www.theweek.in/news/sci-tech/2026/04/01/always-on-agent-and-ai-pet-buddy-anthropics-claude-source-code-leak-reveals-hidden-features.html) - News coverage
 - [PR #41921: buddy-customizer plugin (GitHub)](https://github.com/anthropics/claude-code/pull/41921) - Community gamification extension
-- [any-buddy: Hack Claude Code to get any buddy (GitHub)](https://github.com/cpaczek/any-buddy) - Community reroll tool (v2.1.3)
-- [Leaked Claude Code Shows Anthropic Building Tamagotchi Feature Into It (Futurism)](https://futurism.com/artificial-intelligence/leaked-claude-code-tamagotchi) - News coverage
-- [Issue #41867: Buddy customization & progression (GitHub)](https://github.com/anthropics/claude-code/issues/41867) - Community feature request; @alii confirms April Fools' scope (April 1, 2026)
-- [Claude Code leak used to push infostealer malware on GitHub (BleepingComputer)](https://www.bleepingcomputer.com/news/security/claude-code-leak-used-to-push-infostealer-malware-on-github/) - Malware campaign warning (April 2, 2026)
-- [buddy-evolution spec (GitHub, Hegemon78)](https://github.com/Hegemon78/buddy-evolution-spec) - Community evolution specification
-- [buddy-evolution plugin (GitHub, FrankFMY)](https://github.com/FrankFMY/buddy-evolution) - Community plugin v1.2
-- [ccbuddy.dev](https://ccbuddy.dev/) - Community buddy selector tool
+- [any-buddy: Hack Claude Code to get any buddy (GitHub)](https://github.com/cpaczek/any-buddy) - Community reroll tool
+- [Leaked Claude Code Shows Anthropic Building Tamagotchi Feature (Futurism)](https://futurism.com/artificial-intelligence/leaked-claude-code-tamagotchi) - News coverage
 
 ## Update History
 
 | Date | Change |
 |------|--------|
-| 2026-04-03 | Major correction: Anthropic confirmed April Fools' only, removal after April 7 (retracted permanent availability claim). Added malware warning (Vidar infostealer via fake GitHub repos). Added community ecosystem section (ccbuddy.dev, choose-buddy, buddy-evolution, buddy-evolution-spec). Noted any-buddy updated to v2.1.3. Issue #41867 now closed. |
+| 2026-04-03 | Update: Confirmed no buddy-specific changes in v2.1.90/v2.1.91. Feature stable through teaser window. No new developments found. |
 | 2026-04-02 | Initial report |

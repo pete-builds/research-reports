@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Source Code Leak: What Was Exposed, Fallout, and Implications"
 date: 2026-04-02
-updated: 2026-04-03T13:18:39-04:00
+updated: 2026-04-03 10:10 PM ET
 summary: "On March 31, 2026, Anthropic accidentally shipped a 59.8 MB source map file inside a Claude Code npm update, exposing 512,000+ lines of unobfuscated TypeScript and triggering a cascading fallout including 8,000 copyright takedowns, Congressional inquiry, and active malware campaigns exploiting the leak."
 ---
 
@@ -12,10 +12,10 @@ summary: "On March 31, 2026, Anthropic accidentally shipped a 59.8 MB source map
 - Anthropic pulled the package and issued 8,000+ copyright takedown requests against GitHub forks
 - Developers are actively converting the code to other languages (Rust, Python) to evade DMCA takedowns
 - Rep. Josh Gottheimer (D-NJ) sent a letter to CEO Dario Amodei on April 2 raising national security concerns
-- Threat actors are weaponizing the leak's publicity to distribute malware (Vidar stealer, GhostSocks) -- active campaign confirmed ongoing as of April 3
-- **NEW (Apr 2-3):** Adversa AI discovered a critical vulnerability in Claude Code: a 50-subcommand threshold that bypasses safety checks entirely. The fix (a tree-sitter parser) exists in the leaked source but is not yet deployed in public builds
-- **NEW (Apr 3):** Enterprise security analysts predict mandatory operational changes: environment isolation, stricter repo permissions, mandatory human review of AI output before production
-- **NEW (Apr 3):** Competing project "Claw Code" accumulated 145,000 GitHub stars in a single day, signaling developer migration risk
+- Threat actors are weaponizing the leak's publicity to distribute malware (Vidar stealer, GhostSocks) via at least two GitHub accounts [source: [Help Net Security](https://www.helpnetsecurity.com/2026/04/03/claude-code-leak-github-malware/)]
+- **NEW (Apr 3):** Adversa AI disclosed a critical vulnerability (MAX_SUBCOMMANDS bypass) found directly from the leaked source; appears fixed in v2.1.90 [source: [The Register](https://www.theregister.com/2026/04/01/claude_code_rule_cap_raises/)]
+- **NEW (Apr 3):** The axios npm supply chain attack (North Korea/Sapphire Sleet) occurred hours before the leak on March 31; anyone who installed Claude Code via npm between 00:21-03:29 UTC may have pulled malicious axios versions [source: [Microsoft Security Blog](https://www.microsoft.com/en-us/security/blog/2026/04/01/mitigating-the-axios-npm-supply-chain-compromise/)]
+- **NEW (Apr 3):** Anthropic has shipped two post-leak releases: v2.1.90 (Apr 1) and v2.1.91 (Apr 2) with security hardening [source: [Claude Code Changelog](https://code.claude.com/docs/en/changelog)]
 - This was Anthropic's second major security lapse in days, following an earlier accidental exposure of unpublished model documentation
 
 ## Table of Contents
@@ -29,15 +29,15 @@ summary: "On March 31, 2026, Anthropic accidentally shipped a 59.8 MB source map
 7. [Anthropic's Response](#7-anthropics-response)
 8. [Community and Competitive Fallout](#8-community-and-competitive-fallout)
 9. [Congressional and National Security Response](#9-congressional-and-national-security-response)
-10a. [Critical Vulnerability: 50-Subcommand Safety Bypass](#10a-critical-vulnerability-50-subcommand-safety-bypass-new-apr-2-3)
-10b. [Enterprise Security and Governance Fallout](#10b-enterprise-security-and-governance-fallout-new-apr-2-3)
-10c. [Active Threat: Malware Exploiting the Leak](#10-active-threat-malware-exploiting-the-leak)
-11. [Timeline](#11-timeline)
-12. [Confidence Assessment](#12-confidence-assessment)
-13. [Open Questions](#13-open-questions)
-14. [Sources](#14-sources)
-15. [Update History](#15-update-history)
-16. [How This Report Was Generated](#16-how-this-report-was-generated)
+10. [Vulnerability Disclosed from Leaked Source: MAX_SUBCOMMANDS Bypass](#10-vulnerability-disclosed-from-leaked-source-max_subcommands-bypass)
+11. [Concurrent Axios Supply Chain Attack](#11-concurrent-axios-supply-chain-attack)
+12. [Active Threat: Malware Exploiting the Leak](#12-active-threat-malware-exploiting-the-leak)
+13. [Timeline](#13-timeline)
+14. [Confidence Assessment](#14-confidence-assessment)
+15. [Open Questions](#15-open-questions)
+16. [Sources](#16-sources)
+17. [Update History](#17-update-history)
+18. [How This Report Was Generated](#18-how-this-report-was-generated)
 
 ---
 
@@ -217,43 +217,35 @@ The letter was shared exclusively with Axios before publication. This is the fir
 
 ---
 
-## 10a. Critical Vulnerability: 50-Subcommand Safety Bypass (NEW Apr 2-3)
+## 10. Vulnerability Disclosed from Leaked Source: MAX_SUBCOMMANDS Bypass
 
-Adversa AI discovered a critical vulnerability in Claude Code that the leaked source code both documents and partially resolves -- though the fix is not yet deployed.
+On April 1-2, 2026, Adversa AI (Tel Aviv-based security firm) disclosed a critical vulnerability found by analyzing the leaked source code. Claude Code's `bashPermissions.ts` contains a hard-coded limit: `MAX_SUBCOMMANDS_FOR_SECURITY_CHECK = 50`. An internal Anthropic ticket (CC-643) documents that complex compound commands caused the UI to freeze because each subcommand was individually analyzed against security rules. The "fix" capped analysis at 50 subcommands and fell back to a generic "ask" prompt for anything above that threshold. [source: [The Register](https://www.theregister.com/2026/04/01/claude_code_rule_cap_raises/)]
 
-**Mechanism:** When Claude Code processes a request containing more than 50 subcommands, it skips compute-intensive safety analysis for all commands beyond the 50th threshold and instead falls back to requesting simple user confirmation. Users who approve the confirmation believe standard safety checks remain active; they do not.
+**Attack scenario:** A malicious `CLAUDE.md` file instructs the AI to generate a 50+ subcommand pipeline that looks like a legitimate build process. The proof-of-concept combined 50 no-op `true` subcommands with a restricted `curl` subcommand. Instead of denying the curl operation, Claude Code requested user authorization. This is especially dangerous in `--dangerously-skip-permissions` mode or CI/CD pipelines. [source: [The Register](https://www.theregister.com/2026/04/01/claude_code_rule_cap_raises/)]
 
-**Attack scenario documented by Adversa AI:** A supply chain attack via malicious CLAUDE.md files. Attacker creates a GitHub repository containing a CLAUDE.md configuration file with 50+ legitimate-looking build commands followed by credential exfiltration instructions or other harmful actions. When a developer opens the repo in Claude Code, the harmful tail commands execute with minimal scrutiny.
+**The fix exists but was not shipped:** Anthropic had already developed a tree-sitter parser internally. The recommended one-line change switches the `behavior` key from `ask` to `deny` in `bashPermissions.ts`. Adversa reported the vulnerability appeared fixed in Claude Code v2.1.90 (released April 1). [source: [InfoWorld](https://www.infoworld.com/article/4154199/claude-code-is-still-vulnerable-to-an-attack-anthropic-has-already-fixed.html); [Adversa AI](https://adversa.ai/claude-code-security-bypass-deny-rules-disabled/)]
 
-**Status of fix:** The leaked source code contains a fix: a tree-sitter parser that would validate commands more rigorously. However, as of April 3, 2026, this parser is present in the codebase but **disabled in publicly available builds**. The vulnerability remains exploitable in production.
+No CVE has been assigned as of April 3, 2026.
 
-**Why the leak made this worse:** The existence of this vulnerability was not publicly known before the source code leak. Security researchers only discovered it by analyzing the leaked TypeScript. The leaked code also reveals Anthropic was aware of the issue -- the fix was built but not shipped.
-
-[source: https://www.infoworld.com/article/4154199/claude-code-is-still-vulnerable-to-an-attack-anthropic-has-already-fixed.html; https://www.securityweek.com/critical-vulnerability-in-claude-code-emerges-days-after-source-leak/]
+**Confidence: High** (vulnerability mechanism confirmed by multiple independent sources; fix status confirmed by Adversa testing v2.1.90)
 
 ---
 
-## 10b. Enterprise Security and Governance Fallout (NEW Apr 2-3)
+## 11. Concurrent Axios Supply Chain Attack
 
-Analyst and enterprise security commentary has coalesced around specific risk categories and operational changes:
+A separate, unrelated supply chain attack on the axios npm package occurred hours before the Claude Code leak on March 31, 2026. Microsoft Threat Intelligence attributed the attack to **Sapphire Sleet**, a North Korean state actor. [source: [Microsoft Security Blog](https://www.microsoft.com/en-us/security/blog/2026/04/01/mitigating-the-axios-npm-supply-chain-compromise/)]
 
-**Targeted exploitation risk:** Jun Zhou of Straiker AI: attackers can now "study and fuzz exactly how data flows through Claude Code's four-stage context management pipeline" to craft persistent backdoors. The shift is from probabilistic jailbreaking to deterministic exploitation using known architecture.
+**What happened:** The attacker compromised the npm account of jasonsaayman, a primary axios maintainer, and published two backdoored versions (1.14.1 and 0.30.4) within a 39-minute window. The malicious versions inject `plain-crypto-js@4.2.1`, a fake runtime dependency that executes automatically via post-install, deploying a cross-platform RAT (macOS, Windows, Linux). [source: [The Hacker News](https://thehackernews.com/2026/03/axios-supply-chain-attack-pushes-cross.html)]
 
-**Malicious repository risk:** Shreeya Deshpande, Everest Group senior analyst: "attackers can design malicious repositories specifically tailored to trick Claude Code into running unauthorized background commands."
+**Connection to Claude Code:** Anyone who installed or updated Claude Code via npm on March 31, 2026, between 00:21 and 03:29 UTC may have pulled in the malicious axios versions. Axios has 70+ million weekly npm downloads. [source: [Palo Alto Unit 42](https://unit42.paloaltonetworks.com/axios-supply-chain-attack/)]
 
-**Predicted enterprise response** (Sanchit Vir Gogia, Greyhound Research): immediate moves toward environment isolation, stricter repository permissions, and enforced human review before any AI-generated output reaches production.
+**Remediation:** Roll back axios to safe versions (1.14.0 or 0.30.3 or earlier). [source: [Microsoft Security Blog](https://www.microsoft.com/en-us/security/blog/2026/04/01/mitigating-the-axios-npm-supply-chain-compromise/)]
 
-**Switching cost friction:** Pareekh Jain, Pareekh Consulting, notes enterprises face high switching costs around AI coding tools, making immediate platform migration unlikely despite the breach.
-
-**Governance and compliance exposure:** KAIROS (autonomous background operations) and Undercover Mode (AI authorship concealment) create specific compliance risks in regulated industries where AI contribution must be disclosed and attributed.
-
-**Competitive acceleration:** Joshua Sum estimates the leak "shaved a year of reverse-engineering off every startup and enterprise's roadmap." Competing project Claw Code accumulated 145,000 GitHub stars in one day.
-
-[source: https://www.infoworld.com/article/4154023/claude-code-leak-puts-enterprise-trust-at-risk-as-security-governance-concerns-mount.html]
+**Confidence: High** (confirmed by Microsoft, Google Cloud, Palo Alto Unit 42, Snyk, SANS, and Singapore CSA)
 
 ---
 
-## 10. Active Threat: Malware Exploiting the Leak
+## 12. Active Threat: Malware Exploiting the Leak
 
 Zscaler ThreatLabz identified an active malware campaign exploiting the leak's publicity as a social engineering lure.
 
@@ -268,37 +260,31 @@ Zscaler ThreatLabz identified an active malware campaign exploiting the leak's p
 - GhostSocks C2: `147.45.197[.]92:443`, `94.228.161[.]88:443`
 - Dead drop resolvers: Steam community profiles, Telegram channels
 
-**Attribution:** Publishers `idbzoomh` and associated accounts. Zscaler assessed this as a coordinated campaign, not opportunistic. Archives were updated frequently, indicating active maintenance.
+**Attribution:** Publishers `idbzoomh` and `my3jie` (second account identified April 3 by Help Net Security). Zscaler assessed this as a coordinated campaign, not opportunistic. Archives were updated frequently, indicating active maintenance. [source: [Help Net Security](https://www.helpnetsecurity.com/2026/04/03/claude-code-leak-github-malware/)]
 
 [source: https://www.zscaler.com/blogs/security-research/anthropic-claude-code-leak]
-
-**Updated details (BleepingComputer, Apr 2-3):**
-- The malicious repo was actively SEO-optimized and ranked near the top of Google results for "leaked Claude Code"
-- A second repository with identical code but a non-functional Download ZIP button was discovered, suggesting the same actor was A/B testing delivery strategies
-- Zscaler confirmed the archive is "updated frequently, so other payloads may be added in future iterations" -- indicating active development, not a one-off campaign
-- No GitHub or Anthropic containment statement has been issued specifically regarding the malware repositories as of April 3
-
-[source: https://www.bleepingcomputer.com/news/security/claude-code-leak-used-to-push-infostealer-malware-on-github/]
 
 **If you searched for "leaked Claude Code" on GitHub or Google after March 31**: treat any downloaded archives as potentially malicious. Verify against known-good npm checksums.
 
 ---
 
-## 11. Timeline
+## 13. Timeline
 
 **Reverse chronological**
 
 | Date/Time (ET) | Event |
 |---|---|
-| Apr 3, 2026 | InfoWorld reports Adversa AI vulnerability in deployed builds; fix confirmed present in leaked source but disabled |
-| Apr 3, 2026 | Dark Reading publishes supply chain oversight analysis citing Claude Code leak |
-| Apr 2, 2026, ~6:00 PM | SecurityWeek publishes Adversa AI critical vulnerability report |
-| Apr 2, 2026 | Competing project Claw Code reaches 145,000 GitHub stars in one day |
-| Apr 2, 2026 | BleepingComputer confirms malicious repos are SEO-optimized and actively maintained; dual-repo delivery strategy identified |
-| Apr 2, 2026 | InfoWorld enterprise analysis: Greyhound Research, Straiker AI, Everest Group predict operational changes |
+| Apr 3, 2026 | Help Net Security identifies second malware distributor account (`my3jie`) |
+| Apr 3, 2026 | BleepingComputer, Help Net Security publish expanded malware campaign coverage |
+| Apr 2, 2026 | Claude Code v2.1.91 released with MCP persistence overrides, skill shell execution controls |
+| Apr 2, 2026 | Adversa AI publishes full technical disclosure of MAX_SUBCOMMANDS bypass |
+| Apr 2, 2026 | InfoWorld reports tree-sitter fix exists in Anthropic's codebase but was not shipped to customers |
 | Apr 2, 2026, ~9:00 AM | Rep. Gottheimer letter to Dario Amodei sent; shared with Axios |
 | Apr 2, 2026 | Gartner issues same-day advisory on enterprise security implications |
 | Apr 2, 2026 | Zscaler publishes threat research on malware campaign exploiting leak |
+| Apr 1, 2026 | Claude Code v2.1.90 released; hardened PowerShell checks, fixed auto mode boundary violations |
+| Apr 1, 2026 | Adversa AI identifies MAX_SUBCOMMANDS bypass vulnerability from leaked source |
+| Apr 1, 2026 | Microsoft attributes concurrent axios npm compromise to Sapphire Sleet (North Korea) |
 | Apr 1, 2026 | Anthropic CCO Paul Smith attributes leak to "process errors" in rapid releases |
 | Apr 1, 2026 | Anthropic issues 8,000+ DMCA takedowns against GitHub forks |
 | Apr 1, 2026 | Community Rust port (ClaURST) emerges; reportedly fastest repo to 50k GitHub stars |
@@ -311,7 +297,7 @@ Zscaler ThreatLabz identified an active malware campaign exploiting the leak's p
 
 ---
 
-## 12. Confidence Assessment
+## 14. Confidence Assessment
 
 ### High Confidence
 - The leak occurred on March 31, 2026 via npm package v2.1.88 (confirmed by Anthropic, Hacker News, multiple outlets)
@@ -323,28 +309,28 @@ Zscaler ThreatLabz identified an active malware campaign exploiting the leak's p
 - Rep. Gottheimer's letter is confirmed via Axios and The Hill
 
 ### Medium Confidence
-- Model codename mappings (Capybara = Claude 4.6, Fennec = Opus 4.6) — sourced from VentureBeat analysis of leaked code; Anthropic has not confirmed
-- Zscaler's CVE identifications (CVE-2025-59536 and CVE-2026-21852) — sourced from Zscaler research, not independently verified by this report
-- The malware campaign attribution to coordinated rather than opportunistic activity — Zscaler's assessment, not independently corroborated
-- "Fastest GitHub repo to 50k stars" claim for ClaURST — widely reported but unverified against GitHub historical data
+- Model codename mappings (Capybara = Claude 4.6, Fennec = Opus 4.6) -- sourced from VentureBeat analysis of leaked code; Anthropic has not confirmed
+- Zscaler's CVE identifications (CVE-2025-59536 and CVE-2026-21852) -- sourced from Zscaler research, not independently verified by this report
+- The malware campaign attribution to coordinated rather than opportunistic activity -- Zscaler's assessment, now partially corroborated by Help Net Security identifying second distributor account
+- "Fastest GitHub repo to 50k stars" claim for ClaURST / claw-code -- widely reported (BleepingComputer cites 100k stars) but unverified against GitHub historical data
 
 ---
 
-## 13. Open Questions
+## 15. Open Questions
 
 - Has Anthropic confirmed whether the Undercover Mode was actively used (i.e., did Anthropic employees actually submit AI-authored commits without disclosure)?
 - Will Gottheimer's letter produce a formal Congressional hearing or subpoena?
-- When will Anthropic enable the tree-sitter parser fix for the 50-subcommand vulnerability in production builds? No timeline has been stated.
-- Has Anthropic or GitHub taken any specific action to remove the SEO-optimized malware repositories confirmed by BleepingComputer?
 - What specific security patches is Anthropic deploying in response to the exposed permission logic and identified CVEs?
-- The earlier lapse (unpublished model docs) is referenced but details remain thin -- what exactly was in those documents?
+- The earlier lapse (unpublished model docs) is referenced but details remain thin — what exactly was in those documents?
 - Claude Code's $2.5B run-rate revenue: is this being affected by trust erosion following the dual incidents?
 - Are there other npm packages from Anthropic that may have had similar packaging errors?
-- Will enterprise customers publicly disclose changes to their Claude Code deployment posture in Q2 2026?
+- How many Claude Code users were affected by the concurrent axios supply chain attack? Has Anthropic issued guidance?
+- Will Adversa's MAX_SUBCOMMANDS disclosure trigger a formal CVE assignment?
+- Are there additional vulnerabilities being found from the leaked source that have not yet been publicly disclosed?
 
 ---
 
-## 14. Sources
+## 16. Sources
 
 | Source | URL | Used For |
 |---|---|---|
@@ -366,22 +352,27 @@ Zscaler ThreatLabz identified an active malware campaign exploiting the leak's p
 | Inc. | https://www.inc.com/leila-sheridan/anthropic-code-leak-dc-security/91326007 | National security framing |
 | VentureBeat (security) | https://venturebeat.com/security/claude-code-512000-line-source-leak-attack-paths-audit-security-leaders | Gartner advisory, CrowdStrike/Enkrypt AI comments |
 | GitHub (ClaURST) | https://github.com/Kuberwastaken/claurst | Undercover Mode irony, Bun source map explanation |
-| SecurityWeek | https://www.securityweek.com/critical-vulnerability-in-claude-code-emerges-days-after-source-leak/ | Adversa AI critical vulnerability report |
-| InfoWorld (vulnerability) | https://www.infoworld.com/article/4154199/claude-code-is-still-vulnerable-to-an-attack-anthropic-has-already-fixed.html | 50-subcommand bypass, tree-sitter fix in source but not deployed |
-| InfoWorld (enterprise) | https://www.infoworld.com/article/4154023/claude-code-leak-puts-enterprise-trust-at-risk-as-security-governance-concerns-mount.html | Enterprise security implications, analyst quotes, Claw Code competitor |
-| BleepingComputer (malware) | https://www.bleepingcomputer.com/news/security/claude-code-leak-used-to-push-infostealer-malware-on-github/ | SEO-optimized malware repos, dual delivery strategy, active campaign maintenance |
+| The Register (subcommand) | https://www.theregister.com/2026/04/01/claude_code_rule_cap_raises/ | Adversa AI MAX_SUBCOMMANDS bypass vulnerability |
+| Adversa AI | https://adversa.ai/claude-code-security-bypass-deny-rules-disabled/ | Full technical disclosure of deny rule bypass |
+| InfoWorld | https://www.infoworld.com/article/4154199/claude-code-is-still-vulnerable-to-an-attack-anthropic-has-already-fixed.html | Tree-sitter fix exists but not shipped |
+| Help Net Security | https://www.helpnetsecurity.com/2026/04/03/claude-code-leak-github-malware/ | Second malware distributor account (my3jie) |
+| BleepingComputer | https://www.bleepingcomputer.com/news/security/claude-code-leak-used-to-push-infostealer-malware-on-github/ | Expanded malware campaign coverage |
+| Microsoft Security Blog | https://www.microsoft.com/en-us/security/blog/2026/04/01/mitigating-the-axios-npm-supply-chain-compromise/ | Axios supply chain attack, Sapphire Sleet attribution |
+| The Hacker News (axios) | https://thehackernews.com/2026/03/axios-supply-chain-attack-pushes-cross.html | Axios attack mechanism and timeline |
+| Unit 42 (axios) | https://unit42.paloaltonetworks.com/axios-supply-chain-attack/ | Axios attack scope and remediation |
+| Claude Code Changelog | https://code.claude.com/docs/en/changelog | v2.1.90 and v2.1.91 release details |
 
 ---
 
-## 15. Update History
+## 17. Update History
 
 | Date | Change |
 |---|---|
-| 2026-04-03 | Updated with Apr 2-3 developments: Adversa AI 50-subcommand safety bypass vulnerability (fix exists in leaked source but disabled in production); enterprise security analyst responses (Greyhound, Straiker AI, Everest Group, Pareekh Consulting); BleepingComputer confirmation of SEO-optimized malware repos and dual delivery strategy; Claw Code competitor hitting 145,000 GitHub stars in one day; new open questions on patch deployment timeline and enterprise response. |
+| 2026-04-03 | Update: Added Adversa AI MAX_SUBCOMMANDS bypass disclosure (Section 10), concurrent axios supply chain attack (Section 11), second malware distributor account, v2.1.90/v2.1.91 release details, expanded timeline, new open questions. |
 | 2026-04-02 | Initial report created. Covers events through April 2, 2026 2:07 PM ET. |
 
 ---
 
-## 16. How This Report Was Generated
+## 18. How This Report Was Generated
 
 Researched by the Claude Research Agent using SearXNG (deep search and news search), WebFetch for primary source verification, and public reporting from Hacker News, Zscaler ThreatLabz, The Register, Scientific American, Engineer's Codex, VentureBeat, The Verge, Ars Technica, Fortune, CNBC, Bloomberg, Axios, Gizmodo, PCMag, The Hill, Inc., and GitHub. Research conducted April 2, 2026.
