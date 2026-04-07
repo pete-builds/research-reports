@@ -48,16 +48,36 @@ wsl --install
 ```
 
 3. When it finishes, **restart your computer**
-4. After restarting, an **Ubuntu** window opens automatically and prompts you to create a username and password
+4. After restarting, an **Ubuntu** window may open automatically and prompt you to create a username and password
 
 > **Note:** Your WSL username does not need to match your Windows username. Pick anything you'll remember. This is just for your local Linux environment.
 
+### No Ubuntu App After Restarting?
+
+On some machines, `wsl --install` enables WSL but does not install Ubuntu automatically. If you don't see an Ubuntu app in your Start menu after restarting:
+
+1. Open **PowerShell** (no admin needed this time) and run:
+
+```powershell
+wsl --install -d Ubuntu
+```
+
+2. Restart your computer again
+3. After restarting, search for **Ubuntu** in the Start menu and open it
+4. Ubuntu will finish setting up and ask you to create a username and password
+
 ### Already Have WSL Installed?
 
-Run this instead to make sure it's up to date:
+Run these commands in PowerShell to make sure everything is up to date:
 
 ```powershell
 wsl --update
+```
+
+If you have WSL but no Ubuntu distro, run:
+
+```powershell
+wsl --install -d Ubuntu
 ```
 
 > **No admin rights?** Contact your IT support team to install WSL2 for you. Once it's installed, you won't need admin access for any remaining steps.
@@ -213,7 +233,7 @@ To exit Claude Code, press **Ctrl+C** or type `/exit`.
 | "Authentication failed" | Run `claude-pro` again to re-authenticate through the browser |
 | `claude-pro: command not found` | Run `source ~/.bashrc` or close and reopen Ubuntu |
 | WSL won't install | Virtualization may be disabled in your BIOS. Contact IT support |
-| Ubuntu doesn't appear after restart | Open Start and search for "Ubuntu" to launch it manually |
+| Ubuntu doesn't appear after restart | Run `wsl --install -d Ubuntu` in PowerShell and restart again |
 | Browser login doesn't complete | Make sure your default Windows browser is open and try again |
 
 ---
