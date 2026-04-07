@@ -195,14 +195,30 @@ This makes the new `claude-pro` command available without restarting your termin
 
 ### First Login
 
+First, create a workspace folder:
+
 ```bash
-cd ~
+mkdir -p ~/ai-cli-workspace
+cd ~/ai-cli-workspace
+```
+
+Then launch Claude Code:
+
+```bash
 claude-pro
 ```
 
 Claude Code will show a login prompt. Press **C** to copy the authorization URL, then paste it into your Windows browser. Log in with your Anthropic account and authorize Claude Code. The browser will display an authorization code. Copy that code and paste it back into the Ubuntu terminal. Subsequent launches skip this step.
 
-You can replace `cd ~` with any folder you want to work in. Claude Code reads files from wherever you launch it.
+### Choose Your Project Folder
+
+Claude Code will ask you to select a project directory. Enter:
+
+```
+/home/YOURUSERNAME/ai-cli-workspace
+```
+
+Replace `YOURUSERNAME` with the WSL username you created in Step 1. This is where Claude Code will read and write files.
 
 ### Accept Terms of Service
 
@@ -304,17 +320,16 @@ API keys typically expire on a schedule set by your gateway administrator. When 
 
 ## Next Steps
 
-Claude Code works best when launched from a dedicated workspace folder containing a `CLAUDE.md` file with your project context. This file tells Claude about your codebase, preferences, and conventions.
+Claude Code works best when your workspace contains a `CLAUDE.md` file with your project context. This file tells Claude about your codebase, preferences, and conventions.
 
-Create a workspace folder and add a `CLAUDE.md` to get started:
+To create one in your workspace:
 
 ```bash
-mkdir -p ~/workspace
-cd ~/workspace
+cd ~/ai-cli-workspace
 nano CLAUDE.md
 ```
 
-Add context about your project, then launch Claude Code from that directory.
+Add context about your project, save with **Ctrl+O**, and exit with **Ctrl+X**. Claude Code will read this file automatically the next time you launch from that folder.
 
 ---
 
