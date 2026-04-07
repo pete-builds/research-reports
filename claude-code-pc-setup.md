@@ -200,20 +200,9 @@ cd ~
 claude-pro
 ```
 
-Claude Code will display a URL and try to open your browser. Log in with your Anthropic account, authorize Claude Code, and return to the terminal. Subsequent launches skip this step.
+Claude Code will show a login prompt. Press **C** to copy the authorization URL, then paste it into your Windows browser. Log in with your Anthropic account and authorize Claude Code. The browser will display an authorization code. Copy that code and paste it back into the Ubuntu terminal. Subsequent launches skip this step.
 
 You can replace `cd ~` with any folder you want to work in. Claude Code reads files from wherever you launch it.
-
-### Browser Authorization Not Working?
-
-In WSL, the automatic browser redirect sometimes can't send the authorization code back to the terminal. If the browser opens but you never get a code:
-
-1. Look at the terminal. Claude Code displays a login URL. **Copy that URL manually** (highlight it and right-click to copy)
-2. Paste the URL into your Windows browser and complete the login
-3. After authorizing, the browser will redirect to a page that shows an **authorization code** or a `localhost` URL containing the code
-4. **Copy the code** and paste it back into the Ubuntu terminal where Claude Code is waiting
-
-> **Tip:** If the browser redirects to a `localhost` URL that won't load, that's expected. Copy the full URL from the browser address bar and paste it into the terminal. Claude Code will extract the code from it.
 
 ### Accept Terms of Service
 
@@ -240,7 +229,7 @@ To exit Claude Code, press **Ctrl+C** or type `/exit`.
 | `claude-pro: command not found` | Run `source ~/.bashrc` or close and reopen Ubuntu |
 | WSL won't install | Virtualization may be disabled in your BIOS. Contact IT support |
 | Ubuntu doesn't appear after restart | Install **Ubuntu** from the Microsoft Store (published by Canonical) |
-| Browser login doesn't complete | Copy the URL from the terminal manually, paste into your browser, then copy the authorization code or localhost URL back into the terminal |
+| Browser login doesn't complete | Press **C** to copy the URL, paste into your browser, then copy the auth code back into the terminal |
 
 ---
 
