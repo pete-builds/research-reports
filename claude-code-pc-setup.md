@@ -15,6 +15,7 @@ An optional `claude-gateway` command for connecting through an API gateway is in
 - [Step 3: Install Claude Code](#step-3-install-claude-code)
 - [Step 4: Add the claude-pro Command](#step-4-add-the-claude-pro-command)
 - [Step 5: Launch Claude Code](#step-5-launch-claude-code)
+- [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
 - [Optional: claude-gateway (API Gateway Connection)](#optional-claude-gateway-api-gateway-connection)
 - [Quick Reference](#quick-reference)
@@ -234,6 +235,72 @@ Once Claude Code opens, run these commands inside it:
 | `/cost` | Shows your token usage for the current session |
 
 To exit Claude Code, press **Ctrl+C** or type `/exit`.
+
+---
+
+## Best Practices
+
+### Always Launch from Your Workspace
+
+Claude Code reads files from whatever folder you launch it in. Always `cd` into your workspace first:
+
+```bash
+cd ~/ai-cli-workspace
+claude-pro
+```
+
+### Create a CLAUDE.md File
+
+This is the most important file in your workspace. Claude Code reads it automatically at the start of every session. Use it to tell Claude who you are, what you're working on, and how you want it to behave.
+
+```bash
+nano ~/ai-cli-workspace/CLAUDE.md
+```
+
+Example content:
+
+```markdown
+# My Project
+
+## About Me
+I'm a data analyst working on sales reporting dashboards.
+
+## Current Work
+Building a Python script to pull data from our CRM API.
+
+## Preferences
+- Write Python 3.12 compatible code
+- Use clear variable names
+- Add comments for complex logic
+```
+
+### Useful Commands
+
+These commands work inside Claude Code:
+
+| Command | What it does |
+|---|---|
+| `/model` | Shows current model, lets you switch |
+| `/cost` | Shows token usage for this session |
+| `/help` | Lists all available commands |
+| `/exit` | Exits Claude Code |
+| **Escape** | Cancels the current response |
+| **Up arrow** | Scrolls through your prompt history |
+
+### Monitor Your Usage
+
+On a Pro subscription, you have a usage allowance that resets periodically. Run `/cost` to check how much you've used in the current session. If Claude starts responding slowly or asks you to wait, you've hit your rate limit. Take a break and come back later.
+
+### Use Git for Version Control
+
+If you're writing code, initialize a git repository in your workspace so Claude Code can track changes:
+
+```bash
+cd ~/ai-cli-workspace
+git init
+```
+
+Claude Code works well with git. It can commit changes, create branches, and help you manage your code history.
 
 ---
 
