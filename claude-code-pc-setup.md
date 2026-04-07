@@ -206,7 +206,7 @@ You can replace `cd ~` with any folder you want to work in. Claude Code reads fi
 
 ### Accept Terms of Service
 
-The first time you launch, Claude Code will ask you to accept its terms of service. Type `yes` and press **Enter**.
+The first time you launch, Claude Code will ask you to accept its terms of service. Use the **arrow keys** to navigate the prompts and press **Enter** to confirm.
 
 ### Verify It's Working
 
