@@ -10,6 +10,7 @@ An optional `claude-gateway` command for connecting through an API gateway is in
 
 - [Before You Start](#before-you-start)
 - [Step 1: Install WSL2](#step-1-install-wsl2)
+- [Opening Your Ubuntu Terminal](#opening-your-ubuntu-terminal)
 - [Step 2: Install Node.js](#step-2-install-nodejs)
 - [Step 3: Install Claude Code](#step-3-install-claude-code)
 - [Step 4: Add the claude-pro Command](#step-4-add-the-claude-pro-command)
@@ -63,11 +64,20 @@ wsl --update
 
 ---
 
+## Opening Your Ubuntu Terminal
+
+Every step from here on happens inside Ubuntu, not PowerShell or Command Prompt. Here's how to open it:
+
+1. Click **Start** and search for **Ubuntu**
+2. Click the **Ubuntu** app to open a terminal window
+
+This is your Linux terminal. You'll use it for installation, configuration, and launching Claude Code. You can pin it to your taskbar for quick access.
+
+> **Tip:** If you ever close the window, just open Ubuntu from the Start menu again. Your files and configuration are preserved between sessions.
+
+---
+
 ## Step 2: Install Node.js
-
-### Open Ubuntu
-
-Search for **Ubuntu** in the Start menu and open it. This is your Linux terminal. You'll use it for all remaining steps.
 
 ### Install Node Version Manager (nvm)
 
