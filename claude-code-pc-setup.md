@@ -56,14 +56,9 @@ wsl --install
 
 On some machines, `wsl --install` enables WSL but does not install Ubuntu automatically. If you don't see an Ubuntu app in your Start menu after restarting:
 
-1. Open **PowerShell** (no admin needed this time) and run:
-
-```powershell
-wsl --install -d Ubuntu
-```
-
-2. Restart your computer again
-3. After restarting, search for **Ubuntu** in the Start menu and open it
+1. Open the **Microsoft Store** (search for it in the Start menu)
+2. Search for **Ubuntu** and install it (the one published by Canonical)
+3. Once installed, open **Ubuntu** from the Start menu
 4. Ubuntu will finish setting up and ask you to create a username and password
 
 ### Already Have WSL Installed?
@@ -233,7 +228,7 @@ To exit Claude Code, press **Ctrl+C** or type `/exit`.
 | "Authentication failed" | Run `claude-pro` again to re-authenticate through the browser |
 | `claude-pro: command not found` | Run `source ~/.bashrc` or close and reopen Ubuntu |
 | WSL won't install | Virtualization may be disabled in your BIOS. Contact IT support |
-| Ubuntu doesn't appear after restart | Run `wsl --install -d Ubuntu` in PowerShell and restart again |
+| Ubuntu doesn't appear after restart | Install **Ubuntu** from the Microsoft Store (published by Canonical) |
 | Browser login doesn't complete | Make sure your default Windows browser is open and try again |
 
 ---
