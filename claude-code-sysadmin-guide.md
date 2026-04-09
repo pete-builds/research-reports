@@ -1,6 +1,7 @@
 # Claude Code as a Sysadmin Tool: Comprehensive Practical Guide
 
 **Date:** April 9, 2026 (Eastern Time)
+**Updated:** April 9, 2026 1:15 PM ET
 **Researcher:** Research Agent
 **Classification:** Technical Reference / Practical Guide
 
@@ -8,7 +9,7 @@
 
 ## Executive Summary
 
-Claude Code has matured into a capable sysadmin assistant that can manage servers, containers, and infrastructure from the terminal. This guide covers every practical aspect: SSH setup for remote server management, Docker and container orchestration, MCP integrations for homelab services, security hardening, headless automation, and the "infrastructure as markdown" pattern that makes Claude Code retain knowledge across sessions.
+Claude Code has matured into a capable sysadmin assistant that can manage servers, containers, and infrastructure from the terminal. This guide focuses on the most practical workflow: **running Claude Code on your local machine and giving it SSH access to remote servers**. It also covers how to build a dedicated sysadmin agent skill that knows your infrastructure, follows safety rules, and produces structured output.
 
 The core insight: Claude Code is not just an AI that runs shell commands. It understands what command output means and acts on it. You can say "the web server on 10.0.1.5 is down, fix it" and it checks the service status, reads the error log, identifies the config problem, patches it, re-validates, and restarts the service. [source: [computingforgeeks.com](https://computingforgeeks.com/claude-code-ssh-server-management/)]
 
@@ -18,13 +19,13 @@ The core insight: Claude Code is not just an AI that runs shell commands. It und
 
 ## Table of Contents
 
-1. [Prerequisites and Installation](#1-prerequisites-and-installation)
-2. [SSH Setup for Remote Server Management](#2-ssh-setup-for-remote-server-management)
+1. [The Architecture: Local PC → SSH → Server](#1-the-architecture-local-pc--ssh--server)
+2. [SSH Setup: Keys, Config, and Access](#2-ssh-setup-keys-config-and-access)
 3. [The Infrastructure as Markdown Pattern](#3-the-infrastructure-as-markdown-pattern)
-4. [Docker and Container Management](#4-docker-and-container-management)
-5. [MCP Servers for Infrastructure](#5-mcp-servers-for-infrastructure)
-6. [Permission Configuration for Sysadmin Work](#6-permission-configuration-for-sysadmin-work)
-7. [Sandboxing for Safe Server Operations](#7-sandboxing-for-safe-server-operations)
+4. [Building a Sysadmin Agent Skill](#4-building-a-sysadmin-agent-skill)
+5. [Docker and Container Management](#5-docker-and-container-management)
+6. [MCP Servers for Infrastructure](#6-mcp-servers-for-infrastructure)
+7. [Permission Configuration for Sysadmin Work](#7-permission-configuration-for-sysadmin-work)
 8. [Hooks for Infrastructure Automation](#8-hooks-for-infrastructure-automation)
 9. [Headless Mode and Scheduled Tasks](#9-headless-mode-and-scheduled-tasks)
 10. [Homelab-Specific Setup](#10-homelab-specific-setup)
@@ -34,288 +35,378 @@ The core insight: Claude Code is not just an AI that runs shell commands. It und
 
 ---
 
-## 1. Prerequisites and Installation
+## 1. The Architecture: Local PC → SSH → Server
 
-### Minimum Server Requirements
+The recommended setup for homelab and server management is straightforward: Claude Code runs on your local machine (Mac, Windows/WSL2, or Linux), and manages remote servers by running SSH commands through Bash.
 
-For running Claude Code directly on a remote server (VPS, homelab node, etc.):
-
-- **CPU:** 2 vCPUs minimum, 4 preferred
-- **RAM:** 4GB minimum, 8GB recommended
-- **Storage:** 40GB SSD
-- **OS:** Ubuntu 22.04+ LTS, Debian 12+, Rocky Linux 10.1+, or any modern Linux with Node.js support
-- **Node.js:** v22 LTS
-
-[source: [claudefa.st VPS guide](https://claudefa.st/blog/guide/development/infraops-vps-guide)]
-
-### Installation on a Remote Server
-
-```bash
-# Install Node.js 22 LTS
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Install Claude Code globally
-npm install -g @anthropic-ai/claude-code
-
-# Verify installation
-claude --version
+```
+Your Local Machine (Mac / Windows+WSL2 / Linux)
+  └── Claude Code (installed via npm)
+        ├── ~/.ssh/config (defines server aliases and keys)
+        ├── CLAUDE.md (infrastructure docs Claude reads at start)
+        ├── .claude/commands/sysadmin.md (agent skill)
+        └── Bash tool → ssh server1 "docker ps"
+                       → ssh server2 "systemctl status nginx"
+                       → ssh nas "cat /var/log/syslog | tail -50"
 ```
 
-### Authentication
+**Why this approach over installing Claude Code on the server:**
 
-Two options:
+- **One install, many servers.** Your local machine manages all servers through SSH. No need to install Claude Code on every box.
+- **Context stays local.** Your CLAUDE.md, agent skills, and infrastructure docs live in your workspace. They don't need to exist on the server.
+- **Network access.** Your local machine already has SSH keys, VPN/Tailscale connectivity, and browser access for verifying changes.
+- **Safety.** If Claude Code runs amok, it's running SSH commands remotely, not executing directly as root on the server.
 
-1. **API key** (recommended for servers): Set `ANTHROPIC_API_KEY` in your environment or shell profile.
-2. **OAuth** (for Pro/Max subscribers): Run `claude` and follow the auth URL. Not ideal for headless servers.
+### Prerequisites
 
-```bash
-# Add to ~/.bashrc or ~/.zshrc for persistence
-export ANTHROPIC_API_KEY="sk-ant-..."
-```
-
-Never commit API keys to version control. Use environment variables or a secrets manager.
+- **Claude Code installed locally**: `npm install -g @anthropic-ai/claude-code`
+- **Node.js 22 LTS** on your local machine
+- **SSH key pair** (ed25519 recommended)
+- **SSH access** to your servers with key-based auth
 
 [source: [claudefa.st VPS guide](https://claudefa.st/blog/guide/development/infraops-vps-guide)]
 
 ---
 
-## 2. SSH Setup for Remote Server Management
+## 2. SSH Setup: Keys, Config, and Access
 
-There are two fundamentally different approaches to using Claude Code with remote servers:
+### Generate a Dedicated Key
 
-### Approach A: Install Claude Code on the Remote Server
-
-SSH into the server, install Claude Code there, and run it directly. This gives Claude full access to the server's filesystem and services.
+Use a dedicated key for Claude Code operations so you can revoke it independently:
 
 ```bash
-# From your local machine
-ssh deploy@your-server
-
-# On the remote server
-claude
-```
-
-For persistent sessions that survive SSH disconnects, use tmux or screen:
-
-```bash
-ssh deploy@your-server
-tmux new -s claude-session
-claude
-# Detach with Ctrl+B, D
-# Reattach later with: tmux attach -t claude-session
-```
-
-### Approach B: Run Claude Code Locally, SSH into Servers
-
-Run Claude Code on your local machine and let it SSH into remote servers via Bash commands. This is the more common homelab pattern.
-
-#### SSH Key Setup
-
-Generate a dedicated key for Claude Code operations:
-
-```bash
-# Generate an ed25519 key (recommended)
+# Generate an ed25519 key (strongest, shortest)
 ssh-keygen -t ed25519 -C "claude-code-ops" -f ~/.ssh/claude_ops
 
 # Set correct permissions
 chmod 600 ~/.ssh/claude_ops
 chmod 644 ~/.ssh/claude_ops.pub
 
-# Copy to your server
+# Copy to each server
 ssh-copy-id -i ~/.ssh/claude_ops.pub deploy@your-server
 ```
 
-#### SSH Config for Clean Access
+**No passphrase** on this key (Claude Code can't enter passphrases interactively). Compensate with restrictive file permissions and limiting which servers accept it.
 
-Add entries to `~/.ssh/config` so Claude Code can reference servers by alias:
+### SSH Config for Clean Access
+
+Add entries to `~/.ssh/config` so Claude Code references servers by alias instead of IPs:
 
 ```
-Host homelab-proxmox
-    HostName 10.0.1.10
-    User root
+# Homelab Docker host
+Host docker-host
+    HostName 192.168.86.20
+    User pete
     IdentityFile ~/.ssh/claude_ops
     IdentitiesOnly yes
     ServerAliveInterval 60
     ServerAliveCountMax 3
 
-Host homelab-docker
-    HostName 10.0.1.20
-    User deploy
+# Homelab NAS
+Host nas
+    HostName 192.168.86.40
+    User pete
     IdentityFile ~/.ssh/claude_ops
     IdentitiesOnly yes
-    ServerAliveInterval 60
 
+# Production VPS (non-standard port)
 Host prod-web
     HostName your-vps.example.com
     Port 2222
-    User deploy
+    User pete
     IdentityFile ~/.ssh/claude_ops
     IdentitiesOnly yes
-    ProxyJump bastion
+
+# Tailscale access (when off-LAN)
+Host docker-host-ts
+    HostName 100.67.119.80
+    User pete
+    IdentityFile ~/.ssh/claude_ops
+    IdentitiesOnly yes
+    ServerAliveInterval 60
 ```
 
 Key settings explained:
 - `IdentitiesOnly yes` prevents SSH from trying other keys, avoiding auth failures
-- `ServerAliveInterval 60` sends keepalives every 60 seconds to prevent drops
-- `ProxyJump bastion` routes through a jump host for production servers
+- `ServerAliveInterval 60` sends keepalives every 60 seconds to prevent drops during long operations
+- Non-standard ports go in the config, not in every command
 
-[source: [Joe Njenga on Medium](https://medium.com/@joe.njenga/how-i-use-claude-code-ssh-to-connect-to-any-remote-server-like-a-pro-f08ed35e5569), [midgarcorp.cc SSH tunnels guide](https://midgarcorp.cc/blog/claude-code-remote-ssh-tunnel/)]
+[source: [Joe Njenga on Medium](https://medium.com/@joe.njenga/how-i-use-claude-code-ssh-to-connect-to-any-remote-server-like-a-pro-f08ed35e5569)]
 
-#### Non-Interactive Remote Commands
+### Server-Side: Create a Dedicated User
 
-From your local machine, you can run Claude Code on a remote server in one shot:
+Don't give Claude Code root access. Create a dedicated user with targeted sudo:
 
 ```bash
-ssh deploy@your-server "cd /opt/apps/myproject && claude -p 'Run the test suite and fix any failures'"
+# On the server
+sudo adduser deploy
+sudo usermod -aG docker deploy  # Docker access without sudo
+
+# Grant targeted sudo (only specific commands, no password)
+sudo visudo
+# Add this line:
+# deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl status *, /usr/bin/systemctl restart *, /usr/bin/journalctl *, /usr/sbin/nginx -t, /usr/sbin/nginx -s reload
 ```
 
-[source: [claudefa.st VPS guide](https://claudefa.st/blog/guide/development/infraops-vps-guide)]
+### Tailscale / VPN Access
 
-### Approach C: MCP-Based SSH
+If your homelab uses Tailscale, Claude Code just needs your local machine to be on the Tailscale network. SSH configs then use Tailscale IPs. This works seamlessly because Claude Code runs Bash commands in your local shell context, which inherits your network connectivity.
 
-MCP servers like [claude-ssh-server](https://github.com/jasondsmith72/claude-ssh-server) and [adremote-mcp](https://github.com/nqmn/adremote-mcp) let Claude connect to SSH servers on-demand using just an IP, username, and password/key. This is useful when you need to manage many servers without pre-configuring each one.
+### Test It
 
-[source: [GitHub jasondsmith72/claude-ssh-server](https://github.com/jasondsmith72/claude-ssh-server), [GitHub nqmn/adremote-mcp](https://github.com/nqmn/adremote-mcp)]
+Before asking Claude Code to manage anything, verify SSH works:
+
+```bash
+ssh docker-host "hostname && uptime && docker ps --format 'table {{.Names}}\t{{.Status}}'"
+```
+
+If that works from your terminal, Claude Code can do it too.
+
+[source: [midgarcorp.cc SSH tunnels guide](https://midgarcorp.cc/blog/claude-code-remote-ssh-tunnel/)]
 
 ---
 
 ## 3. The Infrastructure as Markdown Pattern
 
-This is the pattern that makes Claude Code genuinely useful for sysadmin work rather than just a fancy shell wrapper. The idea: maintain markdown files that describe your infrastructure, and Claude Code reads them at session start, giving it full context without rediscovering everything each time.
+This is the pattern that makes Claude Code genuinely useful for sysadmin work rather than just a fancy shell wrapper. Maintain markdown files that describe your infrastructure, and Claude Code reads them at session start.
+
+### Why This Works
+
+The documentation that Claude Code generates while doing work is the same documentation it reads to do the next task. Every configuration choice, installed service, and resolved issue is written down in plain text. If something breaks and you need to bring in a human sysadmin who has never seen your setup, they can read the same markdown files. [source: [martinalderson.com](https://martinalderson.com/posts/how-i-use-claude-code-to-manage-sysadmin-tasks/)]
 
 ### Recommended File Structure
 
-Create a directory (or repo) for your infrastructure documentation:
-
 ```
 infra/
-  CLAUDE.md              # Main entry point, references other files
-  infrastructure.md      # Hardware, IPs, OS versions, installed services
-  docker-services.md     # Each container, its purpose, ports, volumes
-  nginx-sites.md         # Reverse proxy config per domain
-  backup-procedures.md   # What's backed up, where, how to restore
+  CLAUDE.md              # Main entry point, auto-loaded at session start
+  connections.md         # SSH aliases, IPs, ports, users
+  containers.md          # Every container: name, image, ports, volumes, purpose
   known-issues.md        # Problems encountered and their solutions
-  ssh-config.md          # How to reach each server (references ~/.ssh/config aliases)
-  runbooks/
-    deploy-app.md        # Step-by-step deploy procedure
-    rotate-certs.md      # SSL certificate renewal
-    disaster-recovery.md # Full recovery procedure
+  .claude/
+    commands/
+      sysadmin.md        # Your sysadmin agent skill (see Section 4)
 ```
 
-### Example CLAUDE.md for Infrastructure
+### Example CLAUDE.md
 
 ```markdown
 # Infrastructure Management
 
-This directory contains documentation for managing our homelab infrastructure.
-
 ## Server Inventory
-See infrastructure.md for the full server inventory with IPs and roles.
+See connections.md for SSH aliases, IPs, and access details.
+
+## Container Inventory
+See containers.md for the full container grid.
 
 ## SSH Access
-All servers are accessible via SSH aliases configured in ~/.ssh/config.
-Use `ssh homelab-proxmox` for the hypervisor, `ssh homelab-docker` for the container host.
+All servers are accessible via SSH aliases in ~/.ssh/config.
+Use `ssh docker-host` for the container host, `ssh nas` for the NAS.
 
 ## Rules
 - NEVER modify production configs without creating a backup first
 - ALWAYS verify service status after any config change
-- When editing Nginx configs, always run `nginx -t` before reloading
 - Docker Compose changes must be tested with `docker compose config` first
-- Log all significant changes to known-issues.md
+- After any Nginx edit, run `nginx -t` before reloading
+- Log significant changes to known-issues.md
 ```
-
-### Why This Pattern Works
-
-The documentation that Claude Code generates while doing work is the same documentation it reads to do the next task. This is the opposite of how infrastructure knowledge typically degrades. Every configuration choice, installed service, and resolved issue is written down in plain text. [source: [martinalderson.com sysadmin tasks](https://martinalderson.com/posts/how-i-use-claude-code-to-manage-sysadmin-tasks/)]
-
-If something breaks and you need to bring in a human sysadmin who has never seen your setup, they can read the same markdown files and understand the entire environment in minutes. [source: [martinalderson.com](https://martinalderson.com/posts/how-i-use-claude-code-to-manage-sysadmin-tasks/)]
 
 ---
 
-## 4. Docker and Container Management
+## 4. Building a Sysadmin Agent Skill
 
-### Direct Docker Management via Bash
+A sysadmin agent is a Claude Code skill (a markdown file in `.claude/commands/`) that gives Claude a specialized persona, infrastructure knowledge, safety rules, and structured output format. When invoked, it spawns a subagent focused entirely on infrastructure work.
 
-Claude Code can manage Docker directly through Bash commands. In a CLAUDE.md, document your container layout:
+This is the most important section of the guide. A well-built agent turns Claude Code from "an AI that can run SSH commands" into a reliable operations tool.
+
+### Anatomy of a Sysadmin Agent
+
+The skill file lives at `.claude/commands/sysadmin.md` and contains:
+
+1. **Trigger and description** (YAML frontmatter)
+2. **Persona and style** (how the agent communicates)
+3. **Infrastructure context** (what servers exist, how to reach them)
+4. **Reference file loading** (progressive disclosure of detailed docs)
+5. **Safety rules and restrictions**
+6. **Output format** (structured, scannable reports)
+7. **Error handling contract**
+8. **The `$ARGUMENTS` variable** (passes the user's task to the agent)
+
+### Complete Example: A Homelab Sysadmin Agent
 
 ```markdown
-## Docker Services (homelab-docker: 10.0.1.20)
+---
+description: Sysadmin - homelab infrastructure operator. Manages containers, servers, Docker, and networking.
+version: "1.0"
+---
 
-| Container     | Image                      | Ports        | Purpose           |
-|---------------|----------------------------|--------------|-------------------|
-| nginx-proxy   | jwilder/nginx-proxy        | 80, 443      | Reverse proxy     |
-| plex          | plexinc/pms-docker         | 32400        | Media server      |
-| portainer     | portainer/portainer-ce     | 9443         | Container mgmt    |
-| heimdall      | linuxserver/heimdall       | 8080         | Dashboard         |
+You are the Sysadmin agent, a dedicated infrastructure operator.
 
-All services use Docker Compose. Compose files are in /opt/docker/[service-name]/
+Say "Sysadmin online. Checking systems..." then spawn a Task agent
+(subagent_type="general-purpose") with the following instructions:
+
+You are the Sysadmin agent, a dedicated homelab infrastructure operator.
+
+First, read `infra/connections.md` for SSH access details and server inventory.
+Load reference files only when the task requires them:
+- Container inventory: `infra/containers.md`
+- Known issues: `infra/known-issues.md`
+- Backup procedures: `infra/backups.md`
+
+Your style: Direct, efficient, technical. Start responses with "Sysadmin here."
+
+## Infrastructure
+
+- docker-host (Ubuntu, Docker host): SSH alias `docker-host`
+- nas (Synology DS220+): SSH alias `nas`
+- prod-web (Hetzner VPS): SSH alias `prod-web`
+
+For full connection details, see `infra/connections.md`.
+
+## Safety Rules
+
+- NEVER run destructive commands without showing the user first
+- NEVER delete volumes, images, or data without explicit approval
+- ALWAYS verify changes after making them (restart → check status)
+- ALWAYS create backups before modifying production configs
+- If a command requires sudo and hangs, report it instead of retrying
+
+## Output Format
+
+Structure every response using these sections. Omit sections that don't apply:
+
+## Status
+SERVICE/HOST     | STATUS | DETAIL
+-----------------|--------|---------------------------
+docker-host      | UP     | load 0.2, 8GB free
+container-name   | DOWN   | exited 137, OOM killed
+...
+
+## Action Taken
+[What was done, with exact commands run. Or "No action needed"]
+
+## Issues Found
+[Bulleted list with severity (Critical/Warning/Info), or "None"]
+
+## Error Handling
+
+- If a tool call fails, retry once. If it fails again, report the exact error.
+- Never claim a task is complete if any step produced an error.
+- If blocked by access or permissions, report what succeeded and what failed.
+
+Task from user: $ARGUMENTS
 ```
 
-Then Claude Code can:
+### How It Works
 
+When the user types `/sysadmin check if all containers are healthy`, Claude Code:
+
+1. Reads the skill file
+2. Spawns a subagent with the full instructions
+3. The subagent reads `connections.md` to learn SSH details
+4. Runs `ssh docker-host "docker ps -a --format '{{.Names}}\t{{.Status}}'"` 
+5. Parses the output and reports in the structured format
+
+### Key Design Decisions
+
+**Why a subagent?** The sysadmin agent runs as a spawned subagent (`Task agent`), not inline. This protects the main conversation context from being filled with SSH output and container logs. The subagent does its work and returns a clean summary.
+
+**Why progressive disclosure?** The agent reads `connections.md` first (small, always needed), and only loads `containers.md` or `known-issues.md` when relevant. This saves context window space. Skills use progressive disclosure: Claude reads just the description at startup, loading the full content only when relevant. [source: [pulumi.com DevOps skills blog](https://www.pulumi.com/blog/top-8-claude-skills-devops-2026/)]
+
+**Why structured output?** The Status/Action/Issues format makes reports scannable. You see the grid first, then what happened, then what needs attention. This is better than a wall of text.
+
+**Why `$ARGUMENTS`?** This is the magic variable. Whatever the user types after `/sysadmin` gets injected here. The agent receives the task directly without needing to parse conversation history.
+
+### Agent Routing (Multiple Agents)
+
+If you have multiple servers or domains (homelab, production, NAS), you can create separate agents for each, then route automatically from CLAUDE.md:
+
+```markdown
+## Agent Routing
+
+| Trigger Topics | Skill |
+|---|---|
+| Homelab, containers, Docker, servers | `/sysadmin` |
+| Production servers, deploys, WordPress | `/keeper` |
+| NAS, backups, storage, Plex | `/media` |
 ```
-"Check if all containers on homelab-docker are healthy"
-"The Plex container keeps restarting, investigate and fix it"
-"Update the Nginx proxy config to add a new subdomain for Grafana"
+
+This lets you say "check the Docker containers" and Claude routes to the right agent without you specifying which server.
+
+### Real-World Example: Tank Agent
+
+Here's a condensed version of a production sysadmin agent managing a homelab with 35 Docker containers across 2 servers:
+
+**What it does:**
+- Manages an Ubuntu Docker host (35 containers) and a Synology NAS
+- SSHs to servers via Tailscale IPs from a local Mac
+- Reads infrastructure docs at session start for full context
+- Tracks multi-step work in a scratchpad file
+- Reports in a structured Status/Action/Issues format
+
+**What makes it effective:**
+- Has a persona ("Tank") that keeps responses consistent and scannable
+- Knows exactly which SSH alias reaches which server
+- Has explicit safety rules (no destructive commands without approval)
+- Uses reference files for different task types (common tasks, troubleshooting, secrets)
+- Checks for incomplete work on startup (scratchpad file)
+
+The key lesson: the agent's value comes from the infrastructure context baked into it, not from the SSH commands themselves. Anyone can run `docker ps`. The agent knows which containers matter, what healthy looks like, and what to check when something's wrong.
+
+---
+
+## 5. Docker and Container Management
+
+### Direct Docker Management via SSH
+
+With the local PC → SSH architecture, Docker management looks like:
+
+```bash
+# Claude runs these through the Bash tool
+ssh docker-host "docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"
+ssh docker-host "docker logs --tail 50 plex"
+ssh docker-host "cd /home/pete/docker/plex && docker compose restart"
+ssh docker-host "docker system df"
 ```
 
-### Running Claude Code Inside Docker
+Document your container layout in `containers.md` so the agent knows what's running:
 
-For isolation, you can run Claude Code itself inside a Docker container with your workspace mounted:
+```markdown
+## Docker Services (docker-host)
 
-```yaml
-# docker-compose.yml
-services:
-  claude:
-    image: node:22-slim
-    volumes:
-      - ./workspace:/workspace
-      - ~/.claude:/root/.claude
-    environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-    working_dir: /workspace
-    command: >
-      sh -c "npm install -g @anthropic-ai/claude-code && claude"
-    stdin_open: true
-    tty: true
+| Container     | Image                      | Ports    | Purpose           |
+|---------------|----------------------------|----------|-------------------|
+| caddy         | caddy:2-alpine             | 80, 443  | Reverse proxy     |
+| portainer     | portainer/portainer-ce     | 9443     | Container mgmt    |
+| plex          | linuxserver/plex           | host     | Media server      |
+| uptime-kuma   | louislam/uptime-kuma       | 3001     | Monitoring        |
+
+Compose files are in /home/pete/docker/[service-name]/
 ```
 
-When Claude Code runs in Docker with your workspace mounted as a volume, it reads files from that mount, executes commands in the container's isolated process space, and writes output back to the volume. The container's ephemeral filesystem is discarded when the session ends. [source: [Docker blog](https://www.docker.com/blog/run-claude-code-with-docker/)]
+### Docker Best Practices for Container Definitions
+
+When your agent creates or modifies Docker configurations, enforce these standards:
+
+1. **Multi-stage Dockerfiles**: Builder stage installs deps, runtime stage copies only installed packages
+2. **No secrets in images**: Config via env_file or runtime env vars only
+3. **Named volumes**: Declared in top-level `volumes:` block, not bind mounts
+4. **User-defined bridge networks**: Every compose file declares a named network
+5. **Declarative compose**: Full stack defined in docker-compose.yml with restart policy
 
 ### Portainer MCP Integration
 
-If you run Portainer, you can connect Claude Code directly to it via MCP tools to list stacks, manage containers, read compose files, and deploy updates without SSH. This provides a structured API layer rather than raw shell commands.
-
-[source: practical experience; Portainer MCP tools exist in the MCP ecosystem]
-
-### Dev Containers for Isolated Work
-
-Anthropic provides an official [devcontainer reference implementation](https://github.com/anthropics/claude-code/tree/main/.devcontainer) with:
-
-- Pre-configured Node.js 20 with development dependencies
-- Firewall restricting network access to whitelisted domains only (npm registry, GitHub, Claude API)
-- Default-deny network policy
-- ZSH with productivity tools
-- Session persistence across container restarts
-
-The container's enhanced security measures allow you to run `claude --dangerously-skip-permissions` for unattended operation in trusted environments.
-
-[source: [code.claude.com/docs/en/devcontainer](https://code.claude.com/docs/en/devcontainer)]
+If you run Portainer, connect Claude Code directly to it via MCP tools to list stacks, manage containers, read compose files, and deploy updates without SSH. This provides a structured API layer rather than raw shell commands.
 
 ---
 
-## 5. MCP Servers for Infrastructure
+## 6. MCP Servers for Infrastructure
 
 MCP (Model Context Protocol) servers give Claude Code structured access to your infrastructure tools. Instead of parsing shell output, Claude calls typed API functions and gets structured responses.
 
 ### Adding MCP Servers
 
 ```bash
-# Add via CLI
 claude mcp add portainer --transport http https://your-portainer:9443/api
-
-# Add via stdio (local process)
 claude mcp add docker-stats --transport stdio -- node /path/to/docker-stats-mcp/index.js
 ```
 
@@ -331,53 +422,37 @@ MCP configuration lives in `~/.claude.json` (user-level) or `.mcp.json` (project
 | [adremote-mcp](https://github.com/nqmn/adremote-mcp) | SSH remote access through MCP | stdio |
 | [proxmox-mcp-server](https://github.com/husniadil/proxmox-mcp-server) | Manage Proxmox LXC containers via SSH | stdio |
 | [claude-homelab](https://github.com/jmagar/claude-homelab) | Full homelab service management (18 skills) | stdio |
-| [runbook-mcp-server](https://github.com/runbookai/runbook-mcp-server) | Execute ops runbooks from Claude | stdio |
 | Portainer MCP | Docker stack and container management | http |
 
-[source: GitHub repositories linked above, [mcpmarket.com](https://mcpmarket.com/tools/skills/proxmox-infrastructure-management)]
+[source: GitHub repositories linked above]
 
-### The claude-homelab Plugin
+### MCP vs. SSH: When to Use Which
 
-The [claude-homelab](https://github.com/jmagar/claude-homelab) project (v1.4.0) is a comprehensive plugin that manages homelab services through agents, commands, hooks, and skills. It covers:
+**Use SSH (via Bash)** when:
+- You need to run arbitrary commands on a server
+- You're troubleshooting and need to poke around
+- The operation is ad-hoc or one-time
 
-- **Media:** Plex, Overseerr, Radarr, Sonarr, Prowlarr, Tautulli
-- **Downloads:** SABnzbd, qBittorrent
-- **Infrastructure:** Unraid, UniFi, Tailscale, ZFS, SWAG
-- **Utilities:** Linkding, Memos, Paperless-ngx, Gotify
+**Use MCP** when:
+- You have a service with a structured API (Portainer, Proxmox)
+- You want typed tool calls instead of parsing command output
+- The operation is common and benefits from a stable interface
 
-Homelab-specific commands include:
-- `/homelab:system-resources` for CPU, RAM, temperature snapshots
-- `/homelab:docker-health` for container audits identifying unhealthy instances
-- `/homelab:disk-space` for filesystem usage analysis
-- `/homelab:zfs-health` for full ZFS pool diagnostics
-
-All credentials consolidate into `~/.claude-homelab/.env` with `chmod 600` permissions.
-
-[source: [GitHub jmagar/claude-homelab](https://github.com/jmagar/claude-homelab)]
+Most homelab setups use SSH as the primary method, with MCP servers for specific services that have good APIs.
 
 ---
 
-## 6. Permission Configuration for Sysadmin Work
-
-For sysadmin use, you need a carefully tuned permission setup that allows necessary operations while blocking dangerous ones.
+## 7. Permission Configuration for Sysadmin Work
 
 ### Permission System Overview
 
-Claude Code uses a tiered permission system:
-
-| Tool type | Example | Approval required |
-|-----------|---------|-------------------|
-| Read-only | File reads, Grep | No |
-| Bash commands | Shell execution | Yes |
-| File modification | Edit/write files | Yes |
-
-Rules are evaluated in order: **deny -> ask -> allow**. The first matching rule wins. Deny rules always take precedence.
+Claude Code uses a tiered permission system. Rules are evaluated in order: **deny → ask → allow**. The first matching rule wins.
 
 [source: [code.claude.com/docs/en/permissions](https://code.claude.com/docs/en/permissions)]
 
-### Recommended Sysadmin Permission Configuration
+### Recommended Sysadmin Permissions
 
-Create `~/.claude/settings.json` for user-level permissions:
+Create `~/.claude/settings.json`:
 
 ```json
 {
@@ -394,20 +469,13 @@ Create `~/.claude/settings.json` for user-level permissions:
       "Bash(docker compose logs *)",
       "Bash(systemctl status *)",
       "Bash(journalctl *)",
-      "Bash(cat *)",
-      "Bash(tail *)",
-      "Bash(head *)",
-      "Bash(grep *)",
-      "Bash(ls *)",
       "Bash(df *)",
       "Bash(free *)",
       "Bash(uptime)",
-      "Bash(htop *)",
-      "Bash(nginx -t)",
-      "Bash(certbot *)",
+      "Bash(ping *)",
+      "Bash(curl -s *)",
       "Bash(git *)",
-      "Read",
-      "Bash(curl -s *)"
+      "Read"
     ],
     "deny": [
       "Bash(rm -rf /)",
@@ -415,133 +483,33 @@ Create `~/.claude/settings.json` for user-level permissions:
       "Bash(mkfs *)",
       "Bash(fdisk *)",
       "Bash(shutdown *)",
-      "Bash(reboot *)",
-      "Bash(init *)",
-      "Bash(docker system prune *)",
-      "Bash(docker volume rm *)"
+      "Bash(reboot *)"
     ]
   }
 }
 ```
 
-For a production server project, create `.claude/settings.json` in the project:
-
-```json
-{
-  "permissions": {
-    "deny": [
-      "Bash(docker compose down *)",
-      "Bash(docker stop *)",
-      "Bash(docker rm *)",
-      "Bash(systemctl stop *)",
-      "Bash(systemctl disable *)"
-    ]
-  }
-}
-```
+This allows all read/status operations freely, blocks obviously dangerous commands, and prompts for everything else (docker compose up, service restarts, file edits).
 
 ### Permission Modes
 
 | Mode | Description | Sysadmin Use Case |
 |------|-------------|-------------------|
 | `default` | Prompts for permission on first use | Day-to-day interactive work |
-| `acceptEdits` | Auto-accepts file edits and common filesystem commands | Editing config files |
 | `plan` | Read-only, no modifications | Auditing and reviewing infrastructure |
-| `dontAsk` | Auto-denies unless pre-approved | Locked-down automation scripts |
-| `bypassPermissions` | Skips prompts (use only in containers/VMs) | Devcontainer-only |
+| `bypassPermissions` | Skips prompts (containers/VMs only) | Devcontainer automation |
 
 [source: [code.claude.com/docs/en/permissions](https://code.claude.com/docs/en/permissions)]
 
 ---
 
-## 7. Sandboxing for Safe Server Operations
-
-Sandboxing provides OS-level enforcement that restricts filesystem and network access for Bash commands. This is critical for sysadmin work where a mistake can have real consequences.
-
-### Enabling Sandboxing
-
-```
-/sandbox
-```
-
-This opens a menu to choose between:
-
-1. **Auto-allow mode:** Sandboxed commands run without permission prompts. Commands needing access outside the sandbox fall back to normal permission flow.
-2. **Regular permissions mode:** All commands go through standard permission flow, even when sandboxed. More control, more prompts.
-
-### Platform Support
-
-- **macOS:** Uses Seatbelt (built-in), works out of the box
-- **Linux/WSL2:** Requires `bubblewrap` and `socat`: `sudo apt-get install bubblewrap socat`
-- **WSL1:** Not supported
-
-### Configuration for Sysadmin Work
-
-```json
-{
-  "sandbox": {
-    "enabled": true,
-    "filesystem": {
-      "allowWrite": [
-        "~/.ssh/config",
-        "/tmp/claude-work",
-        "./configs"
-      ],
-      "denyRead": [
-        "~/.ssh/id_*",
-        "~/.gnupg"
-      ],
-      "denyWrite": [
-        "/etc",
-        "/usr",
-        "/var"
-      ]
-    }
-  }
-}
-```
-
-### Key Sandboxing Principle
-
-Effective sandboxing requires **both** filesystem and network isolation. Without network isolation, a compromised agent could exfiltrate SSH keys. Without filesystem isolation, a compromised agent could backdoor system resources to gain network access.
-
-[source: [code.claude.com/docs/en/sandboxing](https://code.claude.com/docs/en/sandboxing)]
-
-### Sandbox Limitations for Docker
-
-Docker is incompatible with running inside the sandbox. Add it to `excludedCommands`:
-
-```json
-{
-  "sandbox": {
-    "excludedCommands": ["docker *"]
-  }
-}
-```
-
-This forces Docker commands to run outside the sandbox and go through the normal permissions flow.
-
-[source: [code.claude.com/docs/en/sandboxing](https://code.claude.com/docs/en/sandboxing)]
-
----
-
 ## 8. Hooks for Infrastructure Automation
 
-Hooks are user-defined shell commands that execute at specific points in Claude Code's lifecycle. They provide deterministic control, ensuring certain actions always happen rather than relying on the LLM to choose to do them.
+Hooks are user-defined shell commands that execute at specific points in Claude Code's lifecycle. They provide deterministic control, ensuring certain actions always happen.
 
 [source: [code.claude.com/docs/en/hooks-guide](https://code.claude.com/docs/en/hooks-guide)]
 
-### Sysadmin-Relevant Hook Events
-
-| Event | When it fires | Sysadmin use |
-|-------|---------------|--------------|
-| `PreToolUse` | Before a tool call executes | Block dangerous commands |
-| `PostToolUse` | After a tool call succeeds | Verify config changes, run linters |
-| `Notification` | When Claude needs input | Desktop/Slack alerts during long ops |
-| `Stop` | When Claude finishes responding | Verify final state of changes |
-| `SessionStart` | When a session begins | Load infrastructure context |
-
-### Block Dangerous Server Commands
+### Block Dangerous Commands
 
 Create `.claude/hooks/protect-infra.sh`:
 
@@ -550,11 +518,9 @@ Create `.claude/hooks/protect-infra.sh`:
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 
-# Block destructive commands on remote servers
 BLOCKED_PATTERNS=(
   "rm -rf /"
   "DROP DATABASE"
-  "drop table"
   "> /dev/sda"
   "chmod -R 777"
   ":(){ :|:& };:"
@@ -570,7 +536,7 @@ done
 exit 0
 ```
 
-Register it in `.claude/settings.json`:
+Register in `.claude/settings.json`:
 
 ```json
 {
@@ -590,7 +556,7 @@ Register it in `.claude/settings.json`:
 }
 ```
 
-### Log All Bash Commands for Audit
+### Log All Commands for Audit
 
 ```json
 {
@@ -610,61 +576,18 @@ Register it in `.claude/settings.json`:
 }
 ```
 
-### Verify Nginx Config After Edits
-
-```json
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "if": "Edit(/etc/nginx/**)",
-            "command": "ssh homelab-docker 'nginx -t' || (echo 'Nginx config test failed!' >&2 && exit 2)"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-### Desktop Notifications When Operations Complete
-
-```json
-{
-  "hooks": {
-    "Notification": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "osascript -e 'display notification \"Claude needs your attention\" with title \"Infrastructure Ops\"'"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-### Re-inject Infrastructure Context After Compaction
-
-When Claude's context window fills up, compaction summarizes the conversation and can lose important infrastructure details:
+### Load Infrastructure Context at Session Start
 
 ```json
 {
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "compact",
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "cat infrastructure.md && echo '---' && cat docker-services.md"
+            "command": "echo \"Git: $(git branch --show-current 2>/dev/null) | Modified: $(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')\""
           }
         ]
       }
@@ -681,71 +604,46 @@ When Claude's context window fills up, compaction summarizes the conversation an
 
 ### Headless Mode (-p flag)
 
-The `-p` flag runs Claude Code non-interactively: it processes one prompt, outputs the result, and exits. This makes Claude Code usable in cron jobs, systemd timers, CI/CD pipelines, and any automation that can execute shell commands.
+The `-p` flag runs Claude Code non-interactively for automation:
 
 ```bash
-# Basic usage
-claude -p "Check if all Docker containers are healthy on homelab-docker"
-
-# With tool restrictions
-claude -p "Check disk space on all servers" \
-  --allowedTools "Bash(ssh *),Bash(df *),Read"
-
-# With spending and turn limits
-claude -p "Review and fix the Nginx config" \
-  --allowedTools "Bash,Read,Edit" \
+# Basic health check
+claude -p "SSH into docker-host and check all container health" \
+  --allowedTools "Bash(ssh *)" \
   --max-turns 10 \
-  --max-budget-usd 0.50
+  --max-budget-usd 0.25
 
 # JSON output for scripting
 claude -p "List all running containers" \
   --output-format json \
-  --allowedTools "Bash(docker ps *)"
+  --allowedTools "Bash(ssh *)"
 
 # Bare mode for fastest startup (skips hooks, plugins, MCP, CLAUDE.md)
-claude --bare -p "What's the disk usage?" --allowedTools "Bash(df *)"
+claude --bare -p "What's the disk usage on docker-host?" \
+  --allowedTools "Bash(ssh *)"
 ```
 
-Key flags for automation:
-- `--allowedTools` defines exactly which tools Claude can use
-- `--max-turns` limits how many actions Claude can take
-- `--max-budget-usd` caps API spending
-- `--output-format json` returns structured output for parsing
-- `--bare` skips all auto-discovery for faster, more predictable runs
-- `--continue` / `--resume <session-id>` continues a previous conversation
+Key flags: `--allowedTools` (whitelist), `--max-turns` (step limit), `--max-budget-usd` (cost cap), `--bare` (skip auto-discovery).
 
 [source: [code.claude.com/docs/en/headless](https://code.claude.com/docs/en/headless)]
 
 ### Cron Integration
 
-Example: health check every hour:
-
 ```bash
-# /etc/cron.d/claude-health-check
-0 * * * * deploy ANTHROPIC_API_KEY=sk-ant-... /usr/local/bin/claude --bare -p "SSH into homelab-docker and check: 1) all containers are running, 2) disk usage is under 80%, 3) no OOM kills in dmesg. If anything is wrong, write a summary to /tmp/claude-health-report.txt" --allowedTools "Bash(ssh *),Bash(cat *),Write" --max-turns 15 --max-budget-usd 0.25 >> /var/log/claude-health.log 2>&1
+# Health check every hour
+0 * * * * deploy ANTHROPIC_API_KEY=sk-ant-... /usr/local/bin/claude --bare -p \
+  "SSH into docker-host. Check: 1) all containers running, 2) disk under 80%, 3) no OOM kills in dmesg. Write issues to /tmp/health-report.txt" \
+  --allowedTools "Bash(ssh *),Write" --max-turns 15 --max-budget-usd 0.25 \
+  >> /var/log/claude-health.log 2>&1
 ```
 
 ### Session-Scoped Scheduling with /loop
 
-During an interactive session, use `/loop` for recurring checks:
-
 ```
-/loop 5m check if the deployment finished and tell me what happened
+/loop 5m check if the deployment finished
 /loop 30m check container health on all servers
-/loop 1h run a disk space check and alert if anything is above 85%
+/loop 1h disk space check, alert if anything above 85%
 ```
-
-Tasks are session-scoped and expire after 7 days. For durable scheduling, use cron or Claude Code's Cloud/Desktop scheduled tasks.
-
-[source: [code.claude.com/docs/en/scheduled-tasks](https://code.claude.com/docs/en/scheduled-tasks)]
-
-### Desktop Scheduled Tasks
-
-For recurring tasks that survive restarts but need local file/tool access, use Desktop scheduled tasks (configured through the Claude Code desktop app). These run on your machine without requiring an open session.
-
-### Cloud Scheduled Tasks
-
-For tasks that should run regardless of whether your machine is on, use Cloud scheduled tasks. These run on Anthropic-managed infrastructure with a minimum interval of 1 hour.
 
 [source: [code.claude.com/docs/en/scheduled-tasks](https://code.claude.com/docs/en/scheduled-tasks)]
 
@@ -755,83 +653,28 @@ For tasks that should run regardless of whether your machine is on, use Cloud sc
 
 ### Recommended Architecture
 
-For a typical homelab with multiple services:
-
 ```
-Your Workstation (macOS/Linux)
-  |
-  |-- Claude Code (interactive or headless)
-  |     |-- SSH to servers via ~/.ssh/config
-  |     |-- MCP connections to Portainer, Proxmox, etc.
-  |     |-- CLAUDE.md with full infrastructure docs
-  |
-  |-- homelab-docker (container host)
-  |     |-- Portainer
-  |     |-- Plex, *arr stack
-  |     |-- Nginx reverse proxy
-  |     |-- Monitoring (Grafana, Prometheus)
-  |
-  |-- homelab-proxmox (hypervisor)
-  |     |-- VMs and LXC containers
-  |     |-- Proxmox API
-  |
-  |-- NAS (Synology/TrueNAS)
-        |-- Shared storage
-        |-- Backup targets
+Your Workstation (Mac / WSL2)
+  └── Claude Code + CLAUDE.md + Agent Skills
+        ├── SSH → Docker Host (containers, compose stacks)
+        ├── SSH → NAS (storage, media services)
+        ├── SSH → Production VPS (websites, deploys)
+        ├── MCP → Portainer (container API)
+        └── MCP → Other services (Pi-hole, Uptime Kuma, etc.)
 ```
 
-### Skills for Infrastructure
+### The claude-homelab Plugin
 
-Claude Code skills are markdown files in `.claude/skills/` that give Claude specialized knowledge. For sysadmin work:
+The [claude-homelab](https://github.com/jmagar/claude-homelab) project (v1.4.0) is a comprehensive plugin covering:
 
-```markdown
----
-name: docker-ops
-description: Manage Docker containers and compose stacks across homelab servers
----
+- **Media:** Plex, Overseerr, Radarr, Sonarr, Prowlarr, Tautulli
+- **Downloads:** SABnzbd, qBittorrent
+- **Infrastructure:** Unraid, UniFi, Tailscale, ZFS, SWAG
+- **Utilities:** Linkding, Memos, Paperless-ngx, Gotify
 
-# Docker Operations
+Built-in commands: `/homelab:system-resources`, `/homelab:docker-health`, `/homelab:disk-space`, `/homelab:zfs-health`.
 
-## Available Servers
-- homelab-docker (10.0.1.20): Main container host
-- homelab-media (10.0.1.21): Media services
-
-## Common Operations
-- Check container health: `ssh homelab-docker 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'`
-- View logs: `ssh homelab-docker 'docker logs --tail 50 [container]'`
-- Restart service: `ssh homelab-docker 'cd /opt/docker/[service] && docker compose restart'`
-- Update service: `ssh homelab-docker 'cd /opt/docker/[service] && docker compose pull && docker compose up -d'`
-
-## Rules
-- Always check logs before restarting a container
-- Never run `docker system prune` without asking first
-- After any compose change, verify with `docker compose ps`
-```
-
-Skills use progressive disclosure: Claude reads just the description at startup, loading the full content only when relevant. This saves context window space. [source: [pulumi.com DevOps skills blog](https://www.pulumi.com/blog/top-8-claude-skills-devops-2026/)]
-
-### Proxmox Integration
-
-For Proxmox homelab environments, you can use:
-
-1. **Direct SSH:** Claude runs `ssh homelab-proxmox 'qm list'` and similar commands
-2. **Proxmox MCP Server:** The [proxmox-mcp-server](https://github.com/husniadil/proxmox-mcp-server) provides structured API access for managing LXC containers via SSH
-3. **Skills:** A Proxmox skill can encode your specific VM layout and common operations
-
-[source: [GitHub husniadil/proxmox-mcp-server](https://github.com/husniadil/proxmox-mcp-server), [mcpmarket.com Proxmox skills](https://mcpmarket.com/tools/skills/proxmox-infrastructure-management)]
-
-### Tailscale / VPN Access
-
-If your homelab uses Tailscale or another VPN, Claude Code just needs your local machine to be on the Tailscale network. SSH configs then use Tailscale IPs:
-
-```
-Host homelab-docker
-    HostName 100.x.x.x  # Tailscale IP
-    User deploy
-    IdentityFile ~/.ssh/claude_ops
-```
-
-This works seamlessly because Claude Code runs Bash commands in your local shell context, which inherits your network connectivity.
+[source: [GitHub jmagar/claude-homelab](https://github.com/jmagar/claude-homelab)]
 
 ---
 
@@ -839,26 +682,13 @@ This works seamlessly because Claude Code runs Bash commands in your local shell
 
 ### The Golden Rules
 
-1. **Never give Claude Code root access.** Create a dedicated `deploy` user with targeted sudo permissions.
-2. **Use SSH keys, never passwords.** Passphrase-less keys should only be used on trusted machines.
-3. **Separate read and write permissions.** Allow reading logs and status freely; require prompts for any modifications.
-4. **Use the sandbox.** Enable filesystem and network sandboxing, especially when working with untrusted content.
-5. **Audit everything.** Use PostToolUse hooks to log all commands.
-6. **Limit blast radius.** Use `--max-turns` and `--max-budget-usd` for unattended runs.
+1. **Never give Claude Code root access.** Create a dedicated user with targeted sudo.
+2. **Use SSH keys, never passwords.** Passphrase-less keys only on trusted machines.
+3. **Separate read and write permissions.** Allow reading freely; require prompts for modifications.
+4. **Audit everything.** Use PostToolUse hooks to log all commands.
+5. **Limit blast radius.** Use `--max-turns` and `--max-budget-usd` for unattended runs.
 
-### Server-Side Security
-
-```bash
-# Create a dedicated user for Claude Code operations
-sudo adduser deploy
-sudo usermod -aG docker deploy  # If managing Docker
-
-# Grant targeted sudo access (not full sudo)
-sudo visudo
-# Add: deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl status *, /usr/bin/journalctl *, /usr/sbin/nginx -t
-```
-
-### Disable Password Auth
+### Disable Password Auth on Servers
 
 ```bash
 # /etc/ssh/sshd_config
@@ -869,45 +699,21 @@ PermitRootLogin no
 sudo systemctl restart sshd
 ```
 
-### Firewall Basics
+### Firewall and Fail2ban
 
 ```bash
 sudo ufw allow OpenSSH
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 sudo ufw enable
-```
 
-### Install Fail2ban
-
-```bash
 sudo apt install fail2ban
 sudo systemctl enable fail2ban
 ```
 
-[source: [claudefa.st VPS guide](https://claudefa.st/blog/guide/development/infraops-vps-guide), [code.claude.com/docs/en/security](https://code.claude.com/docs/en/security)]
+### MCP Server Security
 
-### MCP Server Security Considerations
-
-MCP servers that return external content (web search results, community data) carry prompt injection risk. When using MCP servers for infrastructure:
-
-- Keep infrastructure MCP servers on your local/internal network
-- Treat data from internet-facing MCP servers as untrusted
-- Use permission deny rules for MCP tools that could modify infrastructure:
-
-```json
-{
-  "permissions": {
-    "deny": [
-      "mcp__ssh__execute_dangerous_command"
-    ],
-    "allow": [
-      "mcp__portainer__listStacks",
-      "mcp__portainer__listEnvironments"
-    ]
-  }
-}
-```
+MCP servers that return external content carry prompt injection risk. Keep infrastructure MCP servers on your internal network and treat data from internet-facing MCP servers as untrusted.
 
 [source: [code.claude.com/docs/en/security](https://code.claude.com/docs/en/security)]
 
@@ -918,98 +724,79 @@ MCP servers that return external content (web search results, community data) ca
 ### Server Health Monitoring
 
 ```
-"SSH into all three homelab servers and build a health report:
-CPU usage, memory, disk space, container status, and any errors in the last hour of syslog"
-```
-
-### Automated SSL Certificate Management
-
-```
-"Check all SSL certificates on the nginx reverse proxy. List any expiring in the next 30 days.
-For those expiring soon, run certbot renew and reload nginx."
+"SSH into all three servers and build a health report:
+CPU, memory, disk space, container status, errors in the last hour of syslog"
 ```
 
 ### Docker Stack Updates
 
 ```
-"Update the *arr stack (Sonarr, Radarr, Prowlarr) on homelab-docker:
+"Update the media stack on docker-host:
 1. Pull new images
-2. Check release notes for breaking changes
-3. Take a compose snapshot
-4. Bring up with new images
-5. Verify all containers are healthy
-6. Report what changed"
+2. Take a compose snapshot
+3. Bring up with new images
+4. Verify all containers are healthy
+5. Report what changed"
 ```
 
 ### Incident Response
 
 ```
-"The Plex container on homelab-docker is showing as unhealthy in Portainer.
-Investigate: check container logs, host resources, disk space,
-and the Docker daemon logs. Fix the issue and verify Plex is accessible."
-```
-
-### Infrastructure Auditing
-
-```
-"Audit the homelab network for security issues:
-1. Check all SSH configs for password auth being disabled
-2. Verify firewall rules on each server
-3. List all open ports
-4. Check for containers running as root
-5. Verify all Docker images are from trusted registries
-Write findings to security-audit.md"
+"The Plex container is unhealthy. Investigate: check container logs,
+host resources, disk space, Docker daemon logs. Fix the issue and
+verify Plex is accessible."
 ```
 
 ### Configuration Drift Detection
 
 ```
-"Compare the current Nginx config on homelab-docker with what's documented in nginx-sites.md.
-Report any discrepancies and update the documentation to match reality."
+"Compare the current Nginx config on prod-web with what's documented
+in nginx-sites.md. Report discrepancies and update the docs."
 ```
 
-These use cases have been verified working on Rocky Linux 10.1, Debian 12 (Proxmox 8.x), and with Nginx 1.26.3. [source: [computingforgeeks.com](https://computingforgeeks.com/claude-code-ssh-server-management/)]
+### Disk Cleanup
+
+```
+"Check Docker disk usage on docker-host. Clean up build cache older
+than 7 days, remove dangling images, and report how much space was freed."
+```
+
+These use cases have been verified working on Ubuntu, Debian, and Rocky Linux servers. [source: [computingforgeeks.com](https://computingforgeeks.com/claude-code-ssh-server-management/)]
 
 ---
 
 ## 13. Limitations and Gotchas
 
-### What Claude Code Cannot Do Well
+### What Claude Code Cannot Do
 
-- **Real-time monitoring:** Claude Code processes prompts sequentially. It cannot watch a live log stream and react in real time. Use `/loop` for periodic checks instead.
-- **Interactive terminal sessions:** Tools like `top`, `htop`, `vim`, and `less` that require a persistent interactive terminal do not work. Use non-interactive alternatives (`ps aux`, `cat`, `sed`).
-- **Network scanning:** Tools like `nmap` may be blocked by the sandbox or permission system. Configure explicit allows if needed.
-- **Long-running processes:** SSH sessions that take more than a few minutes may time out. Break large tasks into smaller steps.
+- **Interactive terminals:** `top`, `htop`, `vim`, `less` don't work. Use non-interactive alternatives.
+- **Real-time monitoring:** Can't watch a live log stream. Use `/loop` for periodic checks.
+- **Long-running processes:** SSH sessions that take more than a few minutes may time out. Break large tasks into steps.
 
 ### Common Pitfalls
 
-1. **Context window limits:** Very large log files or command outputs can fill the context window. Tell Claude to use `tail -n 50` or `head -n 100` rather than reading entire files.
-2. **SSH agent forwarding:** Claude Code runs Bash in your shell context, so SSH agent forwarding must be configured in your SSH config, not assumed.
-3. **Sudo prompts:** If a command needs sudo and the deploy user requires a password, Claude Code will hang waiting for input. Use NOPASSWD for specific commands or avoid sudo-requiring operations.
-4. **Compound commands and permissions:** When you approve a compound command like `git status && npm test`, Claude Code saves separate rules for each subcommand. Be aware of what you are approving. [source: [code.claude.com/docs/en/permissions](https://code.claude.com/docs/en/permissions)]
-5. **Docker in sandbox:** Docker commands are incompatible with the sandbox. Add Docker to `excludedCommands` to handle it through normal permission flow. [source: [code.claude.com/docs/en/sandboxing](https://code.claude.com/docs/en/sandboxing)]
+1. **Sudo prompts:** If a command needs sudo and requires a password, Claude Code hangs. Use NOPASSWD for specific commands.
+2. **Context overflow:** Large log dumps fill the context window. Tell Claude to use `tail -n 50` or `head -n 100`.
+3. **SSH agent forwarding:** Must be configured in `~/.ssh/config`, not assumed.
+4. **Docker in sandbox:** Docker commands are incompatible with the sandbox. Add to `excludedCommands`. [source: [code.claude.com/docs/en/sandboxing](https://code.claude.com/docs/en/sandboxing)]
 
 ### Cost Awareness
 
-Every interaction with Claude Code uses API tokens. For sysadmin automation:
-
-- Use `--max-budget-usd` to cap spending on unattended runs
-- Use `--max-turns` to limit how many steps Claude takes
-- Use `--bare` mode for simple checks to skip loading context files
-- Prefer targeted prompts over open-ended ones to reduce token usage
+Every interaction uses API tokens. For automation:
+- Use `--max-budget-usd` to cap spending
+- Use `--max-turns` to limit steps
+- Use `--bare` mode for simple checks
+- Prefer targeted prompts over open-ended ones
 
 ---
 
 ## Sources
-
-All claims in this guide are sourced from the following:
 
 ### Official Anthropic Documentation
 - [Permissions](https://code.claude.com/docs/en/permissions)
 - [Sandboxing](https://code.claude.com/docs/en/sandboxing)
 - [Hooks Guide](https://code.claude.com/docs/en/hooks-guide)
 - [MCP Integration](https://code.claude.com/docs/en/mcp)
-- [Development Containers](https://code.claude.com/docs/en/devcontainer)
 - [Headless / Agent SDK CLI](https://code.claude.com/docs/en/headless)
 - [Scheduled Tasks](https://code.claude.com/docs/en/scheduled-tasks)
 - [Security](https://code.claude.com/docs/en/security)
@@ -1020,9 +807,7 @@ All claims in this guide are sourced from the following:
 - [Claude Code SSH to Connect to Any Remote Server (Joe Njenga, Medium)](https://medium.com/@joe.njenga/how-i-use-claude-code-ssh-to-connect-to-any-remote-server-like-a-pro-f08ed35e5569)
 - [Claude Code VPS Setup Guide (claudefa.st)](https://claudefa.st/blog/guide/development/infraops-vps-guide)
 - [Control Claude Code Remotely with SSH Tunnels (midgarcorp.cc)](https://midgarcorp.cc/blog/claude-code-remote-ssh-tunnel/)
-- [Connected Claude Code to Home Server via MCP (XDA Developers)](https://www.xda-developers.com/connected-claude-code-through-mcp-manage-entire-lab-by-talking/)
 - [The Claude Skills I Actually Use for DevOps (Pulumi Blog)](https://www.pulumi.com/blog/top-8-claude-skills-devops-2026/)
-- [Claude Skills as Self-Documenting Runbooks (Zack Proser)](https://zackproser.com/blog/claude-skills-internal-training)
 - [Claude Code as Sysadmin: What It Actually Looks Like (Marc Bara, Medium)](https://medium.com/@marc.bara.iniesta/claude-code-as-sysadmin-what-it-actually-looks-like-969179b995f3)
 
 ### GitHub Projects
@@ -1030,6 +815,12 @@ All claims in this guide are sourced from the following:
 - [claude-ssh-server (jasondsmith72)](https://github.com/jasondsmith72/claude-ssh-server) - Ad-hoc SSH MCP server
 - [adremote-mcp (nqmn)](https://github.com/nqmn/adremote-mcp) - SSH remote access MCP
 - [proxmox-mcp-server (husniadil)](https://github.com/husniadil/proxmox-mcp-server) - Proxmox LXC management
-- [devops-skills (lgbarn)](https://github.com/lgbarn/devops-skills) - Terraform/AWS DevOps skills
-- [claudebox (RchGrav)](https://github.com/RchGrav/claudebox) - Docker development environment for Claude Code
-- [homelab-agent (herms14)](https://github.com/herms14/homelab-agent) - AI-powered homelab infrastructure management
+
+## Update History
+
+- **2026-04-09 1:15 PM ET**: Restructured around local PC → SSH workflow. Added Section 4: Building a Sysadmin Agent Skill with complete skill file template, design decisions, agent routing, and real-world Tank agent example. Trimmed sections on installing Claude Code on the server (moved to brief mention). Removed sandboxing as a standalone section (folded into gotchas). Added Docker best practices reference to container management section.
+- **2026-04-09 12:30 PM ET**: Initial report.
+
+## How This Report Was Generated
+
+This report was researched and written by the Research agent using SearXNG deep search across multiple engines, verified by reading primary sources via WebFetch, and cross-referenced with Anthropic's official documentation at code.claude.com. Community claims were verified against multiple sources before inclusion.
