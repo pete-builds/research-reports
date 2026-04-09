@@ -30,14 +30,13 @@ The core insight: Claude Code is not just an AI that runs shell commands. It und
 3. [The Infrastructure as Markdown Pattern](#3-the-infrastructure-as-markdown-pattern)
 4. [Building a Sysadmin Agent Skill](#4-building-a-sysadmin-agent-skill)
 5. [Docker and Container Management](#5-docker-and-container-management)
-6. [MCP Servers for Infrastructure](#6-mcp-servers-for-infrastructure)
-7. [Permission Configuration for Sysadmin Work](#7-permission-configuration-for-sysadmin-work)
-8. [Hooks for Infrastructure Automation](#8-hooks-for-infrastructure-automation)
-9. [Headless Mode and Scheduled Tasks](#9-headless-mode-and-scheduled-tasks)
-10. [Homelab-Specific Setup](#10-homelab-specific-setup)
-11. [Security Best Practices](#11-security-best-practices)
-12. [Real-World Use Cases](#12-real-world-use-cases)
-13. [Limitations and Gotchas](#13-limitations-and-gotchas)
+6. [Permission Configuration for Sysadmin Work](#6-permission-configuration-for-sysadmin-work)
+7. [Hooks for Infrastructure Automation](#7-hooks-for-infrastructure-automation)
+8. [Headless Mode and Scheduled Tasks](#8-headless-mode-and-scheduled-tasks)
+9. [Homelab-Specific Setup](#9-homelab-specific-setup)
+10. [Security Best Practices](#10-security-best-practices)
+11. [Real-World Use Cases](#11-real-world-use-cases)
+12. [Limitations and Gotchas](#12-limitations-and-gotchas)
 
 ---
 
@@ -499,56 +498,17 @@ When your agent creates or modifies Docker configurations, enforce these standar
 4. **User-defined bridge networks**: Every compose file declares a named network
 5. **Declarative compose**: Full stack defined in docker-compose.yml with restart policy
 
-### Portainer MCP Integration
+### Optional: MCP for Structured API Access
 
-If you run Portainer, connect Claude Code directly to it via MCP tools to list stacks, manage containers, read compose files, and deploy updates without SSH. This provides a structured API layer rather than raw shell commands.
+If you run services with REST APIs (e.g., Portainer for container management), you can build or connect MCP servers that give Claude typed tool calls instead of parsing shell output. MCP configuration lives in `~/.claude.json` (user-level) or `.mcp.json` (project-level).
 
----
-
-## 6. MCP Servers for Infrastructure
-
-MCP (Model Context Protocol) servers give Claude Code structured access to your infrastructure tools. Instead of parsing shell output, Claude calls typed API functions and gets structured responses.
-
-### Adding MCP Servers
-
-```bash
-claude mcp add portainer --transport http https://your-portainer:9443/api
-claude mcp add docker-stats --transport stdio -- node /path/to/docker-stats-mcp/index.js
-```
-
-MCP configuration lives in `~/.claude.json` (user-level) or `.mcp.json` (project-level).
+Most homelab setups use SSH as the primary method. MCP is a nice-to-have for services where a structured API is cleaner than parsing command output.
 
 [source: [code.claude.com/docs/en/mcp](https://code.claude.com/docs/en/mcp)]
 
-### Infrastructure-Relevant MCP Servers
-
-| MCP Server | Purpose | Transport |
-|------------|---------|-----------|
-| [claude-ssh-server](https://github.com/jasondsmith72/claude-ssh-server) | Ad-hoc SSH connections to any server | stdio |
-| [adremote-mcp](https://github.com/nqmn/adremote-mcp) | SSH remote access through MCP | stdio |
-| [proxmox-mcp-server](https://github.com/husniadil/proxmox-mcp-server) | Manage Proxmox LXC containers via SSH | stdio |
-| [claude-homelab](https://github.com/jmagar/claude-homelab) | Full homelab service management (18 skills) | stdio |
-| Portainer MCP | Docker stack and container management | http |
-
-[source: GitHub repositories linked above]
-
-### MCP vs. SSH: When to Use Which
-
-**Use SSH (via Bash)** when:
-- You need to run arbitrary commands on a server
-- You're troubleshooting and need to poke around
-- The operation is ad-hoc or one-time
-
-**Use MCP** when:
-- You have a service with a structured API (Portainer, Proxmox)
-- You want typed tool calls instead of parsing command output
-- The operation is common and benefits from a stable interface
-
-Most homelab setups use SSH as the primary method, with MCP servers for specific services that have good APIs.
-
 ---
 
-## 7. Permission Configuration for Sysadmin Work
+## 6. Permission Configuration for Sysadmin Work
 
 ### Permission System Overview
 
@@ -609,7 +569,7 @@ This allows all read/status operations freely, blocks obviously dangerous comman
 
 ---
 
-## 8. Hooks for Infrastructure Automation
+## 7. Hooks for Infrastructure Automation
 
 Hooks are user-defined shell commands that execute at specific points in Claude Code's lifecycle. They provide deterministic control, ensuring certain actions always happen.
 
@@ -706,7 +666,7 @@ Register in `.claude/settings.json`:
 
 ---
 
-## 9. Headless Mode and Scheduled Tasks
+## 8. Headless Mode and Scheduled Tasks
 
 ### Headless Mode (-p flag)
 
@@ -755,7 +715,7 @@ Key flags: `--allowedTools` (whitelist), `--max-turns` (step limit), `--max-budg
 
 ---
 
-## 10. Homelab-Specific Setup
+## 9. Homelab-Specific Setup
 
 ### Recommended Architecture
 
@@ -764,27 +724,12 @@ Your Workstation (Mac / WSL2)
   └── Claude Code + CLAUDE.md + Agent Skills
         ├── SSH → Docker Host (containers, compose stacks)
         ├── SSH → NAS (storage, media services)
-        ├── SSH → Production VPS (websites, deploys)
-        ├── MCP → Portainer (container API)
-        └── MCP → Other services (Pi-hole, Uptime Kuma, etc.)
+        └── SSH → Production VPS (websites, deploys)
 ```
-
-### The claude-homelab Plugin
-
-The [claude-homelab](https://github.com/jmagar/claude-homelab) project (v1.4.0) is a comprehensive plugin covering:
-
-- **Media:** Plex, Overseerr, Radarr, Sonarr, Prowlarr, Tautulli
-- **Downloads:** SABnzbd, qBittorrent
-- **Infrastructure:** Unraid, UniFi, Tailscale, ZFS, SWAG
-- **Utilities:** Linkding, Memos, Paperless-ngx, Gotify
-
-Built-in commands: `/homelab:system-resources`, `/homelab:docker-health`, `/homelab:disk-space`, `/homelab:zfs-health`.
-
-[source: [GitHub jmagar/claude-homelab](https://github.com/jmagar/claude-homelab)]
 
 ---
 
-## 11. Security Best Practices
+## 10. Security Best Practices
 
 ### The Golden Rules
 
@@ -825,7 +770,7 @@ MCP servers that return external content carry prompt injection risk. Keep infra
 
 ---
 
-## 12. Real-World Use Cases
+## 11. Real-World Use Cases
 
 ### Server Health Monitoring
 
@@ -871,7 +816,7 @@ These use cases have been verified working on Ubuntu, Debian, and Rocky Linux se
 
 ---
 
-## 13. Limitations and Gotchas
+## 12. Limitations and Gotchas
 
 ### What Claude Code Cannot Do
 
@@ -915,12 +860,6 @@ Every interaction uses API tokens. For automation:
 - [Control Claude Code Remotely with SSH Tunnels (midgarcorp.cc)](https://midgarcorp.cc/blog/claude-code-remote-ssh-tunnel/)
 - [The Claude Skills I Actually Use for DevOps (Pulumi Blog)](https://www.pulumi.com/blog/top-8-claude-skills-devops-2026/)
 - [Claude Code as Sysadmin: What It Actually Looks Like (Marc Bara, Medium)](https://medium.com/@marc.bara.iniesta/claude-code-as-sysadmin-what-it-actually-looks-like-969179b995f3)
-
-### GitHub Projects
-- [claude-homelab (jmagar)](https://github.com/jmagar/claude-homelab) - Comprehensive homelab service management plugin
-- [claude-ssh-server (jasondsmith72)](https://github.com/jasondsmith72/claude-ssh-server) - Ad-hoc SSH MCP server
-- [adremote-mcp (nqmn)](https://github.com/nqmn/adremote-mcp) - SSH remote access MCP
-- [proxmox-mcp-server (husniadil)](https://github.com/husniadil/proxmox-mcp-server) - Proxmox LXC management
 
 ## Update History
 
