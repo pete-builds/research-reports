@@ -1,7 +1,7 @@
 # Claude Code as a Sysadmin Tool: Comprehensive Practical Guide
 
 **Date:** April 9, 2026 (Eastern Time)
-**Updated:** April 9, 2026 1:15 PM ET
+**Updated:** April 9, 2026 2:00 PM ET
 **Researcher:** Research Agent
 **Classification:** Technical Reference / Practical Guide
 
@@ -182,16 +182,76 @@ The documentation that Claude Code generates while doing work is the same docume
 
 ### Recommended File Structure
 
+The key insight: split your infrastructure docs into a **main context file** (always loaded) and **reference files** (loaded on demand). This saves context window space while keeping deep documentation available.
+
 ```
 infra/
   CLAUDE.md              # Main entry point, auto-loaded at session start
   connections.md         # SSH aliases, IPs, ports, users
+  infrastructure.md      # Full server inventory: hardware, OS, specs, roles
   containers.md          # Every container: name, image, ports, volumes, purpose
   known-issues.md        # Problems encountered and their solutions
+  reference/
+    common-tasks.md      # SOPs: container management, updates, restarts
+    troubleshooting.md   # Diagnostic playbooks: OOM, disk full, network issues
+    secrets-monitoring.md # Where secrets live, monitoring thresholds, health checks
   .claude/
     commands/
       sysadmin.md        # Your sysadmin agent skill (see Section 4)
 ```
+
+### Why Split Into Reference Files?
+
+Your agent reads the main CLAUDE.md every session. But a 500-line troubleshooting guide wastes context window if you're just checking container health. Split docs by task type and load them on demand:
+
+```markdown
+## Reference Files
+
+Load these as needed to save context window:
+
+| File | Load When... |
+|------|-------------|
+| reference/common-tasks.md | Performing operational tasks: container management, updates, config changes |
+| reference/troubleshooting.md | Diagnosing issues: container failures, resource exhaustion, network problems |
+| reference/secrets-monitoring.md | Auditing secrets, reviewing monitoring thresholds, health checks |
+```
+
+The agent instruction says "Load reference files only when the task requires them." Claude reads the table, understands the categories, and only loads the relevant file for the current task.
+
+### Go Deep on Server Documentation
+
+Don't just list hostnames and IPs. Document everything the agent might need to make decisions:
+
+```markdown
+# Infrastructure Overview
+
+## Docker Host (docker-host)
+| Property | Value |
+|----------|-------|
+| OS | Ubuntu 24.04 LTS |
+| CPU | Intel i7-13700F (24 threads) |
+| RAM | 32GB DDR5 |
+| Storage | 256GB NVMe (LVM) |
+| Role | Primary container host |
+
+### Containers
+| Container | Image | Ports | Purpose |
+|-----------|-------|-------|---------|
+| caddy | caddy:2-alpine | 80, 443 | Reverse proxy |
+| portainer | portainer/portainer-ce | 9443 | Container management |
+| uptime-kuma | louislam/uptime-kuma | 3001 | Service monitoring |
+| plex | linuxserver/plex | 32400 | Media server |
+| n8n | n8nio/n8n | 5678 | Workflow automation |
+
+Compose files: /home/deploy/docker/[service-name]/
+
+### Access URLs
+- Portainer: https://docker-host:9443
+- Uptime Kuma: http://docker-host:3001
+- Plex: http://docker-host:32400/web
+```
+
+This level of detail means the agent never has to discover your infrastructure by probing. It knows what's running, where the compose files live, and how to reach every service. The documentation is the agent's memory between sessions.
 
 ### Example CLAUDE.md
 
@@ -199,14 +259,20 @@ infra/
 # Infrastructure Management
 
 ## Server Inventory
-See connections.md for SSH aliases, IPs, and access details.
+See infrastructure.md for full hardware specs and roles.
 
 ## Container Inventory
-See containers.md for the full container grid.
+See containers.md for the full container grid with ports and purposes.
 
 ## SSH Access
 All servers are accessible via SSH aliases in ~/.ssh/config.
 Use `ssh docker-host` for the container host, `ssh nas` for the NAS.
+
+## Agent Routing
+| Trigger Topics | Skill |
+|---|---|
+| Homelab, containers, Docker, servers | `/sysadmin` |
+| Production servers, deploys, websites | `/keeper` |
 
 ## Rules
 - NEVER modify production configs without creating a backup first
@@ -316,11 +382,48 @@ When the user types `/sysadmin check if all containers are healthy`, Claude Code
 
 **Why a subagent?** The sysadmin agent runs as a spawned subagent (`Task agent`), not inline. This protects the main conversation context from being filled with SSH output and container logs. The subagent does its work and returns a clean summary.
 
-**Why progressive disclosure?** The agent reads `connections.md` first (small, always needed), and only loads `containers.md` or `known-issues.md` when relevant. This saves context window space. Skills use progressive disclosure: Claude reads just the description at startup, loading the full content only when relevant. [source: [pulumi.com DevOps skills blog](https://www.pulumi.com/blog/top-8-claude-skills-devops-2026/)]
+**Why progressive disclosure?** The agent reads `connections.md` first (small, always needed), and only loads troubleshooting or secrets docs when relevant. This saves context window space. Skills use progressive disclosure: Claude reads just the description at startup, loading the full content only when relevant. [source: [pulumi.com DevOps skills blog](https://www.pulumi.com/blog/top-8-claude-skills-devops-2026/)]
 
 **Why structured output?** The Status/Action/Issues format makes reports scannable. You see the grid first, then what happened, then what needs attention. This is better than a wall of text.
 
 **Why `$ARGUMENTS`?** This is the magic variable. Whatever the user types after `/sysadmin` gets injected here. The agent receives the task directly without needing to parse conversation history.
+
+### Advanced Pattern: State Tracking with a Scratchpad
+
+For multi-step operations (rolling updates, migrations, incident response), the agent can lose track of where it is if the context window compacts or the session restarts. Solve this with a scratchpad file:
+
+```markdown
+## State Tracking
+
+Before multi-step work, write to `infra/execution/.scratchpad.md`:
+- Task description
+- Planned steps
+- Current step and result
+
+After each significant action, update with the result.
+On startup, check `.scratchpad.md` for incomplete tasks and offer to resume.
+```
+
+Add this to your agent skill, and the agent writes its plan before starting, updates progress as it goes, and can pick up where it left off if interrupted. This is particularly valuable for operations that touch multiple servers or containers in sequence.
+
+### Advanced Pattern: Raw Data First, Commentary Second
+
+A common failure mode with AI agents is getting summaries instead of data. Your agent should show the actual command output first, then add analysis:
+
+```markdown
+## Output Rules
+
+1. Start with "Sysadmin here." + brief intro
+2. Show RAW DATA first (actual command output, tables, metrics)
+3. Add commentary after the data
+4. Never summarize instead of showing data
+```
+
+This matters because you need to verify what the agent saw. If it says "all containers healthy" but you can't see the actual `docker ps` output, you're trusting the AI's interpretation. Show the data, then the interpretation.
+
+### Advanced Pattern: Persona for Consistency
+
+Giving the agent a distinct persona (name, speaking style, response opener) sounds cosmetic but serves a practical purpose: it makes output instantly recognizable and keeps the response format consistent across sessions. When every response starts with "Sysadmin here." followed by a status grid, you can scan it in seconds. Without a persona, the same agent produces different output structures depending on the prompt.
 
 ### Agent Routing (Multiple Agents)
 
@@ -334,29 +437,26 @@ If you have multiple servers or domains (homelab, production, NAS), you can crea
 | Homelab, containers, Docker, servers | `/sysadmin` |
 | Production servers, deploys, WordPress | `/keeper` |
 | NAS, backups, storage, Plex | `/media` |
+| Infrastructure health, SSL, security | `/sentinel` |
 ```
 
-This lets you say "check the Docker containers" and Claude routes to the right agent without you specifying which server.
+This lets you say "check the Docker containers" and Claude routes to the right agent without you specifying which server. Each agent knows its domain, its servers, and its safety rules. The routing table in CLAUDE.md is the dispatch layer.
 
-### Real-World Example: Tank Agent
+For a mature setup, you might have 5-10 agents covering different infrastructure domains: one for the homelab Docker host, one for production servers, one for media/NAS, one for security auditing, one for network/DNS. Each agent is a focused expert with its own context docs and safety constraints.
 
-Here's a condensed version of a production sysadmin agent managing a homelab with 35 Docker containers across 2 servers:
+### What Makes a Sysadmin Agent Effective (Lessons from Production Use)
 
-**What it does:**
-- Manages an Ubuntu Docker host (35 containers) and a Synology NAS
-- SSHs to servers via Tailscale IPs from a local Mac
-- Reads infrastructure docs at session start for full context
-- Tracks multi-step work in a scratchpad file
-- Reports in a structured Status/Action/Issues format
+After running a sysadmin agent against 35+ containers across multiple servers, these are the patterns that matter most:
 
-**What makes it effective:**
-- Has a persona ("Tank") that keeps responses consistent and scannable
-- Knows exactly which SSH alias reaches which server
-- Has explicit safety rules (no destructive commands without approval)
-- Uses reference files for different task types (common tasks, troubleshooting, secrets)
-- Checks for incomplete work on startup (scratchpad file)
+**Deep infrastructure context beats clever prompting.** An agent that knows every container name, port, compose file location, and access URL will outperform a generic agent with a brilliant system prompt. Document everything. The agent's value comes from knowing what healthy looks like, not from the SSH commands themselves.
 
-The key lesson: the agent's value comes from the infrastructure context baked into it, not from the SSH commands themselves. Anyone can run `docker ps`. The agent knows which containers matter, what healthy looks like, and what to check when something's wrong.
+**Reference file splitting by task type.** One file for common operations (restarts, updates, health checks), another for troubleshooting (OOM kills, disk full, network issues), another for secrets and monitoring. The agent loads only what the current task requires.
+
+**Scratchpad persistence across interruptions.** Multi-step operations (rolling updates, disk cleanup across servers) need a written plan the agent can resume from. Without this, a context compaction or session restart means starting over.
+
+**Structured output is non-negotiable.** Status grid, action taken, issues found. Every time, same format. This is what makes the agent's output trustworthy and scannable at a glance.
+
+**Show raw data, not summaries.** The human needs to see what the agent saw. "All healthy" is useless without the `docker ps` output that proves it.
 
 ---
 
@@ -824,7 +924,8 @@ Every interaction uses API tokens. For automation:
 
 ## Update History
 
-- **2026-04-09 1:15 PM ET**: Restructured around local PC → SSH workflow. Added Section 4: Building a Sysadmin Agent Skill with complete skill file template, design decisions, agent routing, and real-world Tank agent example. Trimmed sections on installing Claude Code on the server (moved to brief mention). Removed sandboxing as a standalone section (folded into gotchas). Added Docker best practices reference to container management section.
+- **2026-04-09 2:00 PM ET**: Enhanced Sections 3 and 4 with production-tested patterns: reference file splitting by task type, deep server documentation, scratchpad state tracking for multi-step ops, raw-data-first output rules, persona for consistency, and lessons from running a sysadmin agent against 35+ containers. All patterns kept generic and environment-agnostic.
+- **2026-04-09 1:15 PM ET**: Restructured around local PC → SSH workflow. Added Section 4: Building a Sysadmin Agent Skill with complete skill file template, design decisions, agent routing, and real-world example. Trimmed sections on installing Claude Code on the server. Removed sandboxing as a standalone section (folded into gotchas). Added Docker best practices reference to container management section.
 - **2026-04-09 12:30 PM ET**: Initial report.
 
 ## How This Report Was Generated
