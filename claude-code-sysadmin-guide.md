@@ -7,6 +7,12 @@
 
 ---
 
+## Disclaimer
+
+This guide is intended for **non-production homelab and experimental environments**. Giving an AI agent SSH access to servers carries real risk. Commands can be destructive, context can be misunderstood, and mistakes on production infrastructure can cause data loss or downtime. Use this guide to learn and experiment on systems you can afford to break. If you apply these patterns to production, do so incrementally, with strict permissions, audit logging, and human approval gates in place.
+
+---
+
 ## Executive Summary
 
 Claude Code has matured into a capable sysadmin assistant that can manage servers, containers, and infrastructure from the terminal. This guide focuses on the most practical workflow: **running Claude Code on your local machine and giving it SSH access to remote servers**. It also covers how to build a dedicated sysadmin agent skill that knows your infrastructure, follows safety rules, and produces structured output.
