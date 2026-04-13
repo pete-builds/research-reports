@@ -1,44 +1,68 @@
 ---
-title: "OLMo: A Transparent, Locally-Deployed LLM for Academic Library Technical Services"
+title: "OLMo: A Transparent, Locally-Deployed LLM for Academic Use"
 date: 2026-04-13
 updated: 2026-04-13
-summary: "Research report evaluating OLMo (Allen Institute for AI) as a fully local, transparent large language model for use in Cornell Library Technical Services. Covers model versions, training data transparency, hardware requirements, privacy guarantees, licensing, long-term sustainability, and practical fit for analyzing privacy notices and vendor policies."
+summary: "Research report evaluating OLMo (Allen Institute for AI) as a fully local, transparent large language model for academic departments. Covers model versions, training data transparency, hardware requirements, privacy guarantees, licensing, long-term sustainability, and practical fit for analyzing privacy notices and vendor policies."
 ---
 
-# OLMo: A Transparent, Locally-Deployed LLM for Academic Library Technical Services
+# OLMo: A Transparent, Locally-Deployed LLM for Academic Use
 
-*Prepared April 13, 2026 (ET) for Professor Lewis, Cornell University*
+*Prepared April 13, 2026 (ET)*
+
+## The Ask
+
+An academic department working on a vendor privacy notices research project needs an LLM that meets the following requirements:
+
+| # | Requirement | Source |
+|---|------------|--------|
+| 1 | **No data capture from user inputs.** The AI must not capture or retain data when students and staff use it. Student prompts and document inputs must not be used to train future model versions. | Stated requirement |
+| 2 | **Training data transparency.** The model itself must be transparent about the data used to build it. The team needs to know what went into the model. | Stated requirement |
+| 3 | **Local installation.** The system should ideally be installed locally, not dependent on a cloud vendor. | Stated requirement |
+| 4 | **Long-term stability.** The system needs to be stable over many years for production use in Library Technical Services. | Stated requirement |
+| 5 | **Academic-friendly licensing.** Non-commercial or academic-permissive. No vendor lock-in. | Implied by context |
+
+### How OLMo Checks Each Box
+
+| # | Requirement | OLMo | Status |
+|---|------------|------|--------|
+| 1 | No data capture from inputs | Runs 100% locally. No network calls, no telemetry, no cloud dependency. Inputs never leave the machine. Data isolation is structural (enforced by architecture), not contractual (enforced by a privacy policy). | **Fully met** |
+| 2 | Training data transparency | The only major LLM that publishes its complete training dataset (Dolma, 3T+ tokens) with a peer-reviewed paper [5], open toolkit [14], and OLMoTrace [6][7] for tracing outputs back to specific training documents. | **Fully met** |
+| 3 | Local installation | Runs via Ollama, llama.cpp, vLLM, or HuggingFace Transformers [13]. One-command setup. Works offline after initial model download. | **Fully met** |
+| 4 | Long-term stability | Built by AI2, a nonprofit with $205.8M annual revenue [10], backed by a $3.1B endowment [11] and a $152M NSF/Nvidia grant [12]. Three major releases in two years. More sustainable than most open-source AI efforts. | **Largely met** (see Honest Risks) |
+| 5 | Academic-friendly licensing | Apache 2.0 for code and weights. ODC-BY for training data. No per-user fees, no usage restrictions, no procurement review needed [1][13]. | **Fully met** |
+
+---
 
 ## Current Status
 
-- **Latest release:** OLMo 3 (December 2025), available at 7B and 32B parameter sizes
-- **License:** Apache 2.0 for all code, weights, and checkpoints. Training data under ODC-BY (Open Data Commons Attribution)
-- **Training data:** Fully documented via the Dolma corpus (3+ trillion tokens, all sources disclosed)
-- **Local deployment:** Confirmed viable via Ollama, vLLM, llama.cpp, and HuggingFace Transformers
+- **Latest release:** OLMo 3 (December 2025), available at 7B and 32B parameter sizes [3]
+- **License:** Apache 2.0 for all code, weights, and checkpoints. Training data under ODC-BY (Open Data Commons Attribution) [1][13]
+- **Training data:** Fully documented via the Dolma corpus (3+ trillion tokens, all sources disclosed) [4][5]
+- **Local deployment:** Confirmed viable via Ollama, vLLM, llama.cpp, and HuggingFace Transformers [13]
 - **Privacy:** When run locally, zero data leaves the machine. No telemetry, no API calls, no phone-home behavior
-- **OLMoTrace:** A first-of-its-kind tool that traces model outputs back to specific training documents, available since April 2025
-- **AI2 funding:** Nonprofit backed by Paul Allen estate ($100M+ annually), plus $3.1B Fund for Science and Technology (established August 2025) and a $152M NSF/Nvidia grant (August 2025)
+- **OLMoTrace:** A first-of-its-kind tool that traces model outputs back to specific training documents, available since April 2025 [6][7]
+- **AI2 funding:** Nonprofit backed by Paul Allen estate ($100M+ annually) [10], plus $3.1B Fund for Science and Technology (established August 2025) [11] and a $152M NSF/Nvidia grant (August 2025) [12]
 
 ---
 
 ## What Is OLMo
 
-OLMo (Open Language Model) is a family of large language models built by the Allen Institute for AI (AI2), a nonprofit research institute in Seattle founded by Microsoft co-founder Paul Allen. The project's explicit goal is to be the most transparent LLM available: not just open weights, but open training data, open training code, open evaluation code, and documented intermediate checkpoints.
+OLMo (Open Language Model) is a family of large language models built by the Allen Institute for AI (AI2), a nonprofit research institute in Seattle founded by Microsoft co-founder Paul Allen [1]. The project's explicit goal is to be the most transparent LLM available: not just open weights, but open training data, open training code, open evaluation code, and documented intermediate checkpoints [2].
 
 **Version history:**
 
 | Version | Release Date | Sizes | Key Milestone |
 |---------|-------------|-------|---------------|
-| OLMo 1 | February 2024 | 1B, 7B | First truly open LLM (weights + data + code) |
-| OLMo 2 | November 2024 | 1B, 7B, 13B, 32B | Competitive with Llama 3.1 8B |
-| OLMo 3 | December 2025 | 7B, 32B | Rivals Meta, DeepSeek on benchmarks |
+| OLMo 1 | February 2024 | 1B, 7B | First truly open LLM (weights + data + code) [2] |
+| OLMo 2 | November 2024 | 1B, 7B, 13B, 32B | Competitive with Llama 3.1 8B [8][9] |
+| OLMo 3 | December 2025 | 7B, 32B | Rivals Meta, DeepSeek on benchmarks [3] |
 
 Each version ships in three variants:
 - **Base**: Raw pretrained model
 - **Instruct**: Fine-tuned for following instructions (most useful for practical tasks)
 - **Think**: Extended chain-of-thought reasoning variant (best for complex analysis)
 
-**Confidence: HIGH.** All version details verified against AI2's official site, arXiv papers, and HuggingFace model cards.
+**Confidence: HIGH.** All version details verified against AI2's official site [1], arXiv papers [2][3], and HuggingFace model cards [9].
 
 ---
 
@@ -48,7 +72,7 @@ This is OLMo's strongest differentiator. The training data is not just "availabl
 
 ### What Is Dolma
 
-Dolma (Data for Open Language Models' Appetite) is a 3+ trillion token English corpus built and maintained by AI2. It contains:
+Dolma (Data for Open Language Models' Appetite) is a 3+ trillion token English corpus built and maintained by AI2 [4][5]. It contains:
 
 | Source | Description |
 |--------|-------------|
@@ -60,24 +84,24 @@ Dolma (Data for Open Language Models' Appetite) is a 3+ trillion token English c
 | Social media | Publicly available social media text |
 
 The corpus is documented through:
-- A formal **data sheet** (standardized documentation of contents and methodology)
-- A peer-reviewed **ACL 2024 paper** (arXiv:2402.00159) describing curation, filtering, and deduplication processes
-- The **Dolma Toolkit** (open-source tools for inspecting, filtering, and replicating the dataset)
-- A **GitHub repository** with all processing code
+- A formal **data sheet** (standardized documentation of contents and methodology) [4]
+- A peer-reviewed **ACL 2024 paper** (arXiv:2402.00159) describing curation, filtering, and deduplication processes [5]
+- The **Dolma Toolkit** (open-source tools for inspecting, filtering, and replicating the dataset) [14]
+- A **GitHub repository** with all processing code [14]
 
 ### OLMoTrace: Tracing Outputs to Training Data
 
-Launched April 2025, OLMoTrace lets users trace any model output back to specific documents in the training corpus. It works by:
+Launched April 2025, OLMoTrace lets users trace any model output back to specific documents in the training corpus [6][7]. It works by:
 
 1. Identifying text spans in model output that appear verbatim in training data
 2. Ranking spans by uniqueness (highlighting the most distinctive matches)
 3. Retrieving and displaying the source documents via BM25 scoring
 
-This is unprecedented. No other production LLM offers real-time attribution to specific training documents. For an academic library context, this means you could potentially verify whether a model's analysis of a privacy notice is drawing on actual policy documents in the training data or generating text with no grounding.
+This is unprecedented. No other production LLM offers real-time attribution to specific training documents [7]. In an academic context, this means you could potentially verify whether a model's analysis of a privacy notice is drawing on actual policy documents in the training data or generating text with no grounding.
 
-OLMoTrace currently supports OLMo 2 32B Instruct, OLMo 2 13B Instruct, and OLMoE 1B-7B Instruct via the AI2 Playground. The underlying search infrastructure (infini-gram) is also open-source.
+OLMoTrace currently supports OLMo 2 32B Instruct, OLMo 2 13B Instruct, and OLMoE 1B-7B Instruct via the AI2 Playground [6]. The underlying search infrastructure (infini-gram) is also open-source.
 
-**Confidence: HIGH.** Verified via AI2 blog, arXiv paper (2504.07096), and HuggingFace.
+**Confidence: HIGH.** Verified via AI2 blog [6], arXiv paper [7], and HuggingFace.
 
 ---
 
@@ -92,7 +116,7 @@ OLMoTrace currently supports OLMo 2 32B Instruct, OLMo 2 13B Instruct, and OLMoE
 | **vLLM** | High-throughput serving | Python-based, best for serving multiple users. Requires more setup. |
 | **HuggingFace Transformers** | Python integration | Native Python API. Best if building custom applications. |
 
-For a library department evaluating the technology, **Ollama is the recommended starting point**. Install Ollama, then run:
+For a department evaluating the technology, **Ollama is the recommended starting point**. Install Ollama, then run:
 ```
 ollama run olmo2:7b
 ```
@@ -100,7 +124,7 @@ That is the entire setup for a working local LLM.
 
 ### Hardware Requirements
 
-These are practical requirements for inference (running the model), not training.
+These are practical requirements for inference (running the model), not training [16].
 
 **OLMo 7B (recommended starting point for evaluation):**
 
@@ -110,7 +134,7 @@ These are practical requirements for inference (running the model), not training
 | 8-bit quantized | 8-10 GB | 16 GB | ~20-30 tokens/sec |
 | Full precision (FP16) | 14-16 GB | 32 GB | Best quality, slower |
 
-**Practical translation:** A workstation with an NVIDIA RTX 4060 (8 GB VRAM) or RTX 4070 (12 GB VRAM) can run OLMo 7B comfortably. An Apple MacBook Pro with M2/M3 and 16 GB unified memory also works well.
+**Practical translation:** A workstation with an NVIDIA RTX 4060 (8 GB VRAM) or RTX 4070 (12 GB VRAM) can run OLMo 7B comfortably. An Apple MacBook Pro with M2/M3 and 16 GB unified memory also works well [16].
 
 **OLMo 13B:**
 
@@ -131,9 +155,7 @@ These are practical requirements for inference (running the model), not training
 
 **Practical translation:** Requires an RTX 4090 (24 GB) at minimum with 4-bit quantization, or dual GPUs / an A100 for higher precision. Apple Mac Studio with M2 Ultra (64-192 GB unified memory) handles this well.
 
-### Realistic University Department Setup
-
-For a Library Technical Services team evaluating OLMo:
+### Realistic Department Setup
 
 **Phase 1 (Evaluation):** A single workstation with an NVIDIA RTX 4070 or 4090, 32 GB system RAM, running Ollama with OLMo 7B Instruct. Cost: $2,000-3,500 for the GPU, or repurpose an existing machine. This is enough to test whether the model handles your use cases.
 
@@ -149,14 +171,14 @@ For a Library Technical Services team evaluating OLMo:
 
 When OLMo is installed and run locally, the privacy guarantee is absolute and structural, not policy-based:
 
-1. **No network connection required.** After downloading the model weights (a one-time download), the model runs entirely offline. You can disconnect the machine from the network and it still works.
-2. **No telemetry.** Ollama, llama.cpp, vLLM, and HuggingFace Transformers do not phone home. The code is open-source and auditable.
+1. **No network connection required.** After downloading the model weights (a one-time download), the model runs entirely offline. You can disconnect the machine from the network and it still works [13].
+2. **No telemetry.** Ollama, llama.cpp, vLLM, and HuggingFace Transformers do not phone home. The code is open-source and auditable [13].
 3. **No API calls.** Unlike ChatGPT or Claude, there is no cloud service involved. The model weights live on disk, inference runs on local CPU/GPU, inputs and outputs never leave the machine.
 4. **No training on your data.** The model is static once downloaded. Your inputs are not used to improve the model or stored anywhere beyond your local machine's memory during the session.
 
 This is fundamentally different from cloud AI services where you must trust a vendor's privacy policy. With local OLMo, data isolation is enforced by physics (the bits never travel across a wire) rather than by contractual promise.
 
-For analyzing sensitive vendor contracts, privacy notices, or institutional data, this means Professor Lewis's team can feed any document into the model with zero risk of data exposure.
+For analyzing sensitive vendor contracts, privacy notices, or institutional data, this means any team can feed documents into the model with zero risk of data exposure.
 
 **Confidence: HIGH.** This is inherent to how local inference works with any open-source model, not specific to OLMo.
 
@@ -164,7 +186,7 @@ For analyzing sensitive vendor contracts, privacy notices, or institutional data
 
 ## Licensing
 
-OLMo uses the **Apache 2.0 License** for model weights, training code, and inference code. The Dolma training data uses the **ODC-BY** (Open Data Commons Attribution) license.
+OLMo uses the **Apache 2.0 License** for model weights, training code, and inference code [1][13]. The Dolma training data uses the **ODC-BY** (Open Data Commons Attribution) license [4].
 
 What this permits:
 - **Commercial and non-commercial use** without restriction
@@ -176,9 +198,9 @@ Apache 2.0 is one of the most permissive open-source licenses available. For a u
 - No procurement or licensing review needed
 - No per-user fees
 - No usage tracking requirements
-- Full freedom to customize the model for specific library tasks
+- Full freedom to customize the model for specific tasks
 
-**Confidence: HIGH.** License verified on GitHub repository, HuggingFace model cards, and AI2 blog posts.
+**Confidence: HIGH.** License verified on GitHub repository [13], HuggingFace model cards [9], and AI2 blog posts [1].
 
 ---
 
@@ -186,19 +208,19 @@ Apache 2.0 is one of the most permissive open-source licenses available. For a u
 
 ### Funding
 
-AI2 is a 501(c)(3) nonprofit founded in 2014. Its financial position as of 2024 tax filings:
+AI2 is a 501(c)(3) nonprofit founded in 2014 [10]. Its financial position as of 2024 tax filings:
 
-- **Annual revenue:** $205.8M (2024), up from $53M in 2021
-- **Primary funder:** Paul Allen estate, providing $100M+ annually in contributions
-- **Net assets:** $81.5M with revenue exceeding expenses by $60.4M
-- **New endowment:** The Paul Allen estate established the **Fund for Science and Technology** in August 2025 with a **$3.1 billion endowment**, pledging at least $500M over four years for bioscience, environment, and AI research
-- **Government funding:** AI2 received a **$152M grant from NSF and Nvidia** in August 2025 to lead a national AI infrastructure project
+- **Annual revenue:** $205.8M (2024), up from $53M in 2021 [10]
+- **Primary funder:** Paul Allen estate, providing $100M+ annually in contributions [10]
+- **Net assets:** $81.5M with revenue exceeding expenses by $60.4M [10]
+- **New endowment:** The Paul Allen estate established the **Fund for Science and Technology** in August 2025 with a **$3.1 billion endowment**, pledging at least $500M over four years for bioscience, environment, and AI research [11]
+- **Government funding:** AI2 received a **$152M grant from NSF and Nvidia** in August 2025 to lead a national AI infrastructure project [12]
 
-This is among the strongest funding positions of any nonprofit AI research organization. The $3.1B endowment provides a structural floor for decades of operation.
+This is among the strongest funding positions of any nonprofit AI research organization. The $3.1B endowment provides a structural floor for decades of operation [11].
 
 ### Track Record
 
-AI2 has maintained a consistent open-science mission since 2014. The OLMo project specifically has shipped three major releases in two years (Feb 2024, Nov 2024, Dec 2025) with increasing model quality. Each release has been more open than the last, not less.
+AI2 has maintained a consistent open-science mission since 2014 [1]. The OLMo project specifically has shipped three major releases in two years (Feb 2024, Nov 2024, Dec 2025) with increasing model quality [2][3][8]. Each release has been more open than the last, not less.
 
 ### Honest Risks
 
@@ -206,11 +228,11 @@ AI2 has maintained a consistent open-science mission since 2014. The OLMo projec
 
 2. **Leadership transitions.** Ali Farhadi became CEO after Oren Etzioni stepped down. Organizational priorities could shift, though the endowment structure provides insulation.
 
-3. **No guarantees of continued development.** Even well-funded nonprofits can pivot. However, OLMo has become AI2's flagship project and public identity.
+3. **No guarantees of continued development.** Even well-funded nonprofits can pivot. However, OLMo has become AI2's flagship project and public identity [1].
 
-4. **Model format changes.** The LLM ecosystem is young. File formats, inference engines, and best practices may change. However, because everything is open-source, the community can maintain compatibility even if AI2 shifts focus.
+4. **Model format changes.** The LLM ecosystem is young. File formats, inference engines, and best practices may change. However, because everything is open-source, the community can maintain compatibility even if AI2 shifts focus [13][14].
 
-**Bottom line:** AI2's funding is more sustainable than virtually any other open-source AI effort. The $3.1B endowment makes this closer to an endowed university program than a startup. The risk is not that AI2 disappears, but that the broader field evolves in ways that make current approaches obsolete, which is a risk inherent to any AI technology choice.
+**Bottom line:** AI2's funding is more sustainable than virtually any other open-source AI effort. The $3.1B endowment makes this closer to an endowed university program than a startup [11]. The risk is not that AI2 disappears, but that the broader field evolves in ways that make current approaches obsolete, which is a risk inherent to any AI technology choice.
 
 **Confidence: HIGH on funding facts. MEDIUM on long-term predictions (5+ year horizon is inherently uncertain in AI).**
 
@@ -230,40 +252,40 @@ AI2 has maintained a consistent open-science mission since 2014. The OLMo projec
 | Context window | Up to 64K tokens | 128K-200K tokens | Moderate |
 | Multimodal (images) | Not supported in OLMo text models | Full support | Large |
 
-### Realistic Expectations for Library Use
+### Realistic Expectations for Academic Use
 
 - **Good for:** Analyzing structured text (privacy policies, vendor agreements), extracting specific clauses, summarizing documents, comparing language across policies, identifying standard vs. non-standard terms
 - **Adequate for:** Drafting initial assessments, categorizing document types, answering factual questions about document content
 - **Weak for:** Tasks requiring broad world knowledge, multilingual documents, visual document analysis (scanned PDFs), real-time information
 - **Not suitable for:** Tasks where cloud-model quality is strictly required, high-speed interactive chat for many simultaneous users
 
-The 7B model will handle straightforward extraction and summarization. For nuanced analysis of legal and policy language, the 32B model (especially the Think variant) is recommended.
+The 7B model will handle straightforward extraction and summarization. For nuanced analysis of legal and policy language, the 32B model (especially the Think variant) is recommended [3].
 
-**Confidence: HIGH on benchmark comparisons. MEDIUM on library-specific task predictions (would need hands-on testing to confirm).**
+**Confidence: HIGH on benchmark comparisons. MEDIUM on task-specific predictions (would need hands-on testing to confirm).**
 
 ---
 
 ## Use Case Fit: Privacy Notice Analysis
 
-Professor Lewis's specific interest is analyzing privacy notices and vendor policies. Here is how OLMo fits:
+A key use case is analyzing privacy notices and vendor policies. Here is how OLMo fits:
 
 ### Strengths for This Use Case
 
-1. **Document analysis is a sweet spot.** Privacy notices are structured, English-language text documents. OLMo handles this class of content well.
+1. **Document analysis is a sweet spot.** Privacy notices are structured, English-language text documents. OLMo handles this class of content well [3].
 
 2. **No data exposure.** Privacy notices may reference institutional data practices, vendor relationships, or contractual terms that should not be shared externally. Local deployment eliminates this concern entirely.
 
 3. **Reproducibility.** The same model version produces consistent results. Unlike cloud APIs that update silently, a locally installed OLMo version is frozen and deterministic (when temperature is set to 0).
 
-4. **Auditability.** If someone asks "why did the model flag this clause?", OLMoTrace can show what training documents the model may have drawn from. This is valuable in an academic and institutional context.
+4. **Auditability.** If someone asks "why did the model flag this clause?", OLMoTrace can show what training documents the model may have drawn from [6][7]. This is valuable in an academic and institutional context.
 
-5. **Custom fine-tuning.** With enough labeled examples, OLMo can be fine-tuned specifically for privacy policy analysis, improving accuracy for this domain. Apache 2.0 licensing permits this without restriction.
+5. **Custom fine-tuning.** With enough labeled examples, OLMo can be fine-tuned specifically for privacy policy analysis, improving accuracy for this domain. Apache 2.0 licensing permits this without restriction [1][13].
 
 ### Limitations for This Use Case
 
 1. **No legal training.** OLMo is a general-purpose language model, not a legal AI. Its analysis of legal terms should be treated as a first-pass tool, not a definitive interpretation.
 
-2. **Knowledge cutoff.** Training data has a cutoff (approximately December 2023 for current models). New regulatory frameworks (e.g., recent state privacy laws) may not be reflected in model knowledge.
+2. **Knowledge cutoff.** Training data has a cutoff (approximately December 2023 for current models) [5]. New regulatory frameworks (e.g., recent state privacy laws) may not be reflected in model knowledge.
 
 3. **Quality gap.** For subtle legal reasoning, GPT-4 or Claude will produce better analysis. The question is whether OLMo's analysis is "good enough" for the specific workflow, which requires hands-on testing.
 
@@ -275,11 +297,11 @@ Start with OLMo 7B Instruct on a single workstation. Test it against 10-20 priva
 
 ## Brief Note: Pythia as an Alternative
 
-**Pythia** is a suite of 16 language models (70M to 12B parameters) from EleutherAI, another nonprofit focused on open AI research. Like OLMo, Pythia was designed for transparency: all models, training data (The Pile), and 154 intermediate checkpoints are publicly available.
+**Pythia** is a suite of 16 language models (70M to 12B parameters) from EleutherAI, another nonprofit focused on open AI research [15]. Like OLMo, Pythia was designed for transparency: all models, training data (The Pile), and 154 intermediate checkpoints are publicly available [15].
 
 Pythia is better suited for **research on how language models learn** (interpretability, training dynamics) rather than for **practical deployment as a tool**. Its largest model (12B) is significantly smaller than OLMo 3's 32B, and it has not been instruction-tuned for practical task completion.
 
-**Recommendation:** OLMo is the better choice for Professor Lewis's use case. Pythia is worth knowing about as a secondary reference for anyone interested in the science of transparent AI, but it is not a practical alternative for document analysis workflows.
+**Recommendation:** OLMo is the better choice for this use case. Pythia is worth knowing about as a secondary reference for anyone interested in the science of transparent AI, but it is not a practical alternative for document analysis workflows.
 
 ---
 
@@ -287,14 +309,14 @@ Pythia is better suited for **research on how language models learn** (interpret
 
 | Claim | Confidence | Basis |
 |-------|-----------|-------|
-| OLMo runs fully locally with no data leakage | HIGH | Architectural fact of local inference |
-| Training data is fully documented (Dolma) | HIGH | Published corpus, peer-reviewed paper, open toolkit |
-| Apache 2.0 licensing allows unrestricted academic use | HIGH | Verified on multiple official sources |
-| 7B model runs on a $2-3K workstation | HIGH | Widely benchmarked VRAM requirements |
-| 32B model needs ~24 GB VRAM (quantized) | MEDIUM-HIGH | Extrapolated from model card and general formulas |
-| AI2 funding is sustainable for 5+ years | MEDIUM-HIGH | $3.1B endowment is strong, but organizations can change priorities |
-| OLMo quality is sufficient for privacy notice analysis | MEDIUM | Plausible based on benchmarks, but requires hands-on testing |
-| OLMo will remain actively developed for 5+ years | MEDIUM | Strong indicators, but no guarantees in a fast-moving field |
+| OLMo runs fully locally with no data leakage | HIGH | Architectural fact of local inference [13] |
+| Training data is fully documented (Dolma) | HIGH | Published corpus, peer-reviewed paper, open toolkit [4][5][14] |
+| Apache 2.0 licensing allows unrestricted academic use | HIGH | Verified on multiple official sources [1][9][13] |
+| 7B model runs on a $2-3K workstation | HIGH | Widely benchmarked VRAM requirements [16] |
+| 32B model needs ~24 GB VRAM (quantized) | MEDIUM-HIGH | Extrapolated from model card and general formulas [9] |
+| AI2 funding is sustainable for 5+ years | MEDIUM-HIGH | $3.1B endowment is strong, but organizations can change priorities [10][11] |
+| OLMo quality is sufficient for privacy notice analysis | MEDIUM | Plausible based on benchmarks, but requires hands-on testing [3] |
+| OLMo will remain actively developed for 5+ years | MEDIUM | Strong indicators, but no guarantees in a fast-moving field [1][11] |
 
 ---
 
