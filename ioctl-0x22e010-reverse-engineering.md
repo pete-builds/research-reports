@@ -392,51 +392,51 @@ This is not theoretical. Active ransomware groups use this driver in production 
 
 ### Primary Research
 
-- Abudagga, Jehad. "Reverse Engineering a 0day used Against CrowdStrike EDR." Medium, April 2026. https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4
-- "Researcher Reverse Engineered 0-Day Used to Disable CrowdStrike EDR." Cybersecurity News, April 14, 2026. https://cybersecuritynews.com/0-day-disable-crowdstrike-edr/
+- Abudagga, Jehad. ["Reverse Engineering a 0day used Against CrowdStrike EDR."](https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4) Medium, April 2026.
+- ["Researcher Reverse Engineered 0-Day Used to Disable CrowdStrike EDR."](https://cybersecuritynews.com/0-day-disable-crowdstrike-edr/) Cybersecurity News, April 14, 2026.
 
 ### Threat Intelligence
 
-- Palo Alto Networks Unit 42. "Agonizing Serpens (Aka Agrius) Targeting the Israeli Higher Education and Tech Sectors." https://unit42.paloaltonetworks.com/agonizing-serpens-targets-israeli-tech-higher-ed-sectors/
-- CrowdStrike. "Falcon Prevents Vulnerable Driver Attacks in Real-World Intrusion." https://www.crowdstrike.com/en-us/blog/falcon-prevents-vulnerable-driver-attacks-real-world-intrusion/
-- S2W. "Detailed Analysis of DragonForce Ransomware." Medium. https://medium.com/s2wblog/detailed-analysis-of-dragonforce-ransomware-25d1a91a4509
-- Acronis TRU. "The DragonForce Cartel: Scattered Spider at the Gate." https://www.acronis.com/en/tru/posts/the-dragonforce-cartel-scattered-spider-at-the-gate/
+- Palo Alto Networks Unit 42. ["Agonizing Serpens (Aka Agrius) Targeting the Israeli Higher Education and Tech Sectors."](https://unit42.paloaltonetworks.com/agonizing-serpens-targets-israeli-tech-higher-ed-sectors/)
+- CrowdStrike. ["Falcon Prevents Vulnerable Driver Attacks in Real-World Intrusion."](https://www.crowdstrike.com/en-us/blog/falcon-prevents-vulnerable-driver-attacks-real-world-intrusion/)
+- S2W. ["Detailed Analysis of DragonForce Ransomware."](https://medium.com/s2wblog/detailed-analysis-of-dragonforce-ransomware-25d1a91a4509) Medium.
+- Acronis TRU. ["The DragonForce Cartel: Scattered Spider at the Gate."](https://www.acronis.com/en/tru/posts/the-dragonforce-cartel-scattered-spider-at-the-gate/)
 
 ### Driver Databases
 
-- LOLDrivers. "Rentdrv2 entry." https://www.loldrivers.io/drivers/afb8bb46-1d13-407d-9866-1daa7c82ca63/
-- LOLDrivers. "PoisonX entry." https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/
-- keowu/BadRentdrv2. GitHub. https://github.com/keowu/BadRentdrv2
+- LOLDrivers. ["Rentdrv2 entry."](https://www.loldrivers.io/drivers/afb8bb46-1d13-407d-9866-1daa7c82ca63/)
+- LOLDrivers. ["PoisonX entry."](https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/)
+- [keowu/BadRentdrv2.](https://github.com/keowu/BadRentdrv2) GitHub.
 
 ### Detection Rules
 
-- SigmaHQ. "Vulnerable Driver Load." https://detection.fyi/sigmahq/sigma/windows/driver_load/driver_load_win_vuln_drivers/
-- Splunk. "Windows Vulnerable Driver Loaded." https://research.splunk.com/endpoint/a2b1f1ef-221f-4187-b2a4-d4b08ec745f4/
-- Microsoft Learn. "Attack Surface Reduction Rules Reference." https://learn.microsoft.com/en-us/defender-endpoint/attack-surface-reduction-rules-reference
-- Microsoft Learn. "Microsoft Recommended Driver Block Rules." https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/microsoft-recommended-driver-block-rules
-- HotCakeX. "Harden-Windows-Security WDAC Notes." https://github.com/HotCakeX/Harden-Windows-Security/wiki/WDAC-Notes
+- SigmaHQ. ["Vulnerable Driver Load."](https://detection.fyi/sigmahq/sigma/windows/driver_load/driver_load_win_vuln_drivers/)
+- Splunk. ["Windows Vulnerable Driver Loaded."](https://research.splunk.com/endpoint/a2b1f1ef-221f-4187-b2a4-d4b08ec745f4/)
+- Microsoft Learn. ["Attack Surface Reduction Rules Reference."](https://learn.microsoft.com/en-us/defender-endpoint/attack-surface-reduction-rules-reference)
+- Microsoft Learn. ["Microsoft Recommended Driver Block Rules."](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/microsoft-recommended-driver-block-rules)
+- HotCakeX. ["Harden-Windows-Security WDAC Notes."](https://github.com/HotCakeX/Harden-Windows-Security/wiki/WDAC-Notes)
 
 ### Vulnerability Databases
 
-- NIST NVD. "CVE-2023-44976 Detail." https://nvd.nist.gov/vuln/detail/CVE-2023-44976
-- Feedly. "CVE-2023-44976 - Exploits & Severity." https://feedly.com/cve/CVE-2023-44976
-- CISA. "Vulnerability Summary for the Week of July 28, 2025." https://www.cisa.gov/news-events/bulletins/sb25-216
+- NIST NVD. ["CVE-2023-44976 Detail."](https://nvd.nist.gov/vuln/detail/CVE-2023-44976)
+- Feedly. ["CVE-2023-44976 - Exploits & Severity."](https://feedly.com/cve/CVE-2023-44976)
+- CISA. ["Vulnerability Summary for the Week of July 28, 2025."](https://www.cisa.gov/news-events/bulletins/sb25-216)
 
 ### Proof of Concept / Source Code
 
-- BlackSnufkin/BYOVD - PoisonX-Killer (Rust implementation). https://github.com/BlackSnufkin/BYOVD/blob/main/PoisonX-Killer/src/main.rs
-- Nekr0w/poisonkiller - PoisonKiller PoC. https://github.com/Nekr0w/poisonkiller
-- j3h4ck/PoisonKiller - Fork/variant. https://github.com/j3h4ck/PoisonKiller
-- Muz1K1zuM/PoisonKiller_bof - Cobalt Strike BOF version. https://github.com/Muz1K1zuM/PoisonKiller_bof
+- [BlackSnufkin/BYOVD](https://github.com/BlackSnufkin/BYOVD/blob/main/PoisonX-Killer/src/main.rs) - PoisonX-Killer (Rust implementation).
+- [Nekr0w/poisonkiller](https://github.com/Nekr0w/poisonkiller) - PoisonKiller PoC.
+- [j3h4ck/PoisonKiller](https://github.com/j3h4ck/PoisonKiller) - Fork/variant.
+- [Muz1K1zuM/PoisonKiller_bof](https://github.com/Muz1K1zuM/PoisonKiller_bof) - Cobalt Strike BOF version.
 
 ### Microsoft Documentation
 
-- Microsoft Learn. "Defining I/O Control Codes." https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/defining-i-o-control-codes
-- Microsoft Learn. "!ioctldecode." https://learn.microsoft.com/en-us/windows-hardware/drivers/debuggercmds/-ioctldecode
-- Microsoft Learn. "Security Issues for I/O Control Codes." https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/security-issues-for-i-o-control-codes
+- Microsoft Learn. ["Defining I/O Control Codes."](https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/defining-i-o-control-codes)
+- Microsoft Learn. ["!ioctldecode."](https://learn.microsoft.com/en-us/windows-hardware/drivers/debuggercmds/-ioctldecode)
+- Microsoft Learn. ["Security Issues for I/O Control Codes."](https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/security-issues-for-i-o-control-codes)
 
 ### Tools
 
 - OSR IOCTL Decoder (online). Referenced but not fetched.
-- z4ksec. "IoctlHunter Release (v0.2)." https://z4ksec.github.io/posts/ioctlhunter-release-v0.2/
-- daaximus. "Most IOCTLs mapped to their code names." GitHub Gist. https://gist.github.com/daaximus/e813aa52980fc2a97a8a8a1082338de4
+- z4ksec. ["IoctlHunter Release (v0.2)."](https://z4ksec.github.io/posts/ioctlhunter-release-v0.2/)
+- daaximus. ["Most IOCTLs mapped to their code names."](https://gist.github.com/daaximus/e813aa52980fc2a97a8a8a1082338de4) GitHub Gist.
