@@ -41,6 +41,8 @@ While a vendor patch exists (versions after 2024-12-24), it does not mitigate th
 
 **Why this is in the news now (April 2026):** The vulnerability has been exploited since October 2023, but a [full reverse engineering walkthrough](https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4) and working proof-of-concept ([PoisonKiller](https://github.com/Nekr0w/poisonkiller)) were publicly released this week. Ten PoisonX driver variants were [cataloged on LOLDrivers](https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/) on April 10. The barrier to replicate this attack has dropped significantly.
 
+**What you can do now:** Confirm [HVCI](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/microsoft-recommended-driver-block-rules) is enabled on your endpoints, verify the Microsoft Vulnerable Driver Blocklist is current, and enable the Defender ASR rule "Block abuse of exploited vulnerable signed drivers" (GUID: `56a863a9-875e-4185-98a7-b882c64b5ce5`). PowerShell commands and detection rules are in the [IT Operations Guide](#it-operations-guide) below.
+
 Effective mitigation requires Microsoft to revoke the driver's signature or add its hashes to the [Windows Driver Blocklist (WDAC)](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/microsoft-recommended-driver-block-rules). Until then, organizations should enforce HVCI (Hypervisor-protected Code Integrity) and monitor for driver loads, the device path `\\.\{F8284233-48F4-4680-ADDD-F8284233}`, and IOCTL 0x22E010 calls.
 
 ---
