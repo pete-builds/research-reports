@@ -7,6 +7,16 @@ summary: "IOCTL 0x22E010 is a vendor-defined buffered I/O control code used by t
 
 # Reverse Engineering IOCTL 0x22E010: The EDR-Killing Control Code
 
+## Executive Summary
+
+IOCTL 0x22E010 is a kernel-level process termination control code exposed by the Rentdrv2 driver (Hangzhou Shunwang Technology). When called from kernel mode, it bypasses Windows Protected Process Light (PPL) to kill any process, including CrowdStrike Falcon and other EDR products. The driver carries a valid Microsoft signature and had zero antivirus detections at time of discovery.
+
+While a vendor patch exists (versions after 2024-12-24), it does not mitigate the real-world threat. In BYOVD (Bring Your Own Vulnerable Driver) attacks, adversaries drop their own copy of the old, pre-patch signed binary onto the target system. Because the Microsoft signature remains valid, Windows loads it without complaint. The patch only fixes the vendor's distribution, not the attacker's copy. This technique has been weaponized in the wild since October 2023 by the Iranian APT group Agonizing Serpens (Agrius) against Israeli targets.
+
+Effective mitigation requires Microsoft to revoke the driver's signature or add its hashes to the Windows Driver Blocklist (WDAC). Until then, organizations should enforce HVCI (Hypervisor-protected Code Integrity) and monitor for driver loads, the device path `\\.\{F8284233-48F4-4680-ADDD-F8284233}`, and IOCTL 0x22E010 calls.
+
+---
+
 ## Current Status
 
 - **IOCTL 0x22E010** is a process-termination control code exposed by the Rentdrv2/PoisonX Windows kernel driver
