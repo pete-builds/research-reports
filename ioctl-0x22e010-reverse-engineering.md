@@ -200,6 +200,141 @@ Source: [NVD CVE-2023-44976](https://nvd.nist.gov/vuln/detail/CVE-2023-44976), [
 4. **Driver hash blocklisting**: Add known Rentdrv2/PoisonX driver hashes to WDAC or HVCI blocklists
 5. **Kernel callback routines**: Implement `PsSetCreateProcessNotifyRoutine` callbacks to detect unauthorized kernel-initiated process termination
 
+### Why the CVSS 3.2 "Low" score is misleading
+
+The base score rates this as low-severity because the attack vector is local and requires admin privileges. In practice, this drastically understates the risk. Attackers who already have admin access use this driver as a force multiplier: they kill EDR first, then deploy ransomware, exfiltrate data, or persist undetected. The CVSS score measures the driver in isolation. The real-world impact is the chain: EDR dies, then the actual attack begins with no visibility. DragonForce ransomware uses Rentdrv2.sys as one of its two BYOVD backends (config field `use_sys=2`), confirming this is an active component in ransomware kill chains, not a theoretical risk [S2W Medium, Acronis TRU].
+
+---
+
+## IT Operations Guide
+
+This section is written for IT staff who need to assess exposure, detect this attack, and harden their environment.
+
+### Immediate action checklist
+
+1. **Verify HVCI is enabled** on all Windows endpoints (see commands below)
+2. **Verify the Microsoft Vulnerable Driver Blocklist is active** and current
+3. **Enable the ASR rule** "Block abuse of exploited vulnerable signed drivers" (GUID: `56a863a9-875e-4185-98a7-b882c64b5ce5`) [Microsoft Learn]
+4. **Deploy Sysmon** if not already running, with driver load logging (Event ID 6)
+5. **Search historical logs** for indicators of past compromise (see Forensic Triage below)
+6. **Add driver hashes** to your blocklist if using a custom WDAC policy
+
+### Check your protection status
+
+**Check HVCI / Virtualization-Based Security:**
+```powershell
+Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\Microsoft\Windows\DeviceGuard
+```
+Look for `VirtualizationBasedSecurityStatus`: 2 = Running, 1 = Enabled but not running, 0 = Not enabled. [Source: Microsoft Learn, HotCakeX/Harden-Windows-Security]
+
+**Check WDAC / App Control policy status:**
+```powershell
+Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\Microsoft\Windows\DeviceGuard | Select-Object -Property *codeintegrity* | Format-List
+```
+Values: `2` = Enforced, `1` = Audit mode, `0` = Disabled. Both `UserModeCodeIntegrityPolicyEnforcementStatus` and `CodeIntegrityPolicyEnforcementStatus` (kernel mode) should be checked. [Source: HotCakeX/Harden-Windows-Security wiki]
+
+**Refresh App Control policies after deploying blocklist updates:**
+```powershell
+CITool --refresh
+```
+[Source: Microsoft Learn driver block rules documentation]
+
+**Note:** The Microsoft Vulnerable Driver Blocklist is enabled by default on Windows 11 (2022 update and later) and is enforced when HVCI, Smart App Control, or S mode is active. If you are running Windows 10 or have not enabled HVCI, the blocklist may not be enforced. [Source: Microsoft Learn]
+
+### Known driver hashes for blocklisting
+
+**Rentdrv2.sys:**
+
+| Variant | SHA256 | Source |
+|---------|--------|--------|
+| x64 | `9165d4f3036919a96b86d24b64d75d692802c7513f2b3054b20be40c212240a5` | [LOLDrivers](https://www.loldrivers.io/drivers/afb8bb46-1d13-407d-9866-1daa7c82ca63/), [BadRentdrv2 GitHub](https://github.com/keowu/BadRentdrv2) |
+| x32 | `1aed62a63b4802e599bbd33162319129501d603cceeb5e1eb22fd4733b3018a3` | [BadRentdrv2 GitHub](https://github.com/keowu/BadRentdrv2) |
+
+**PoisonX.sys variants** (all share Authentihash `1ce001eda18c7a0636c4053848a1ae69812704795ab057331903d7002d688027`):
+
+| Variant | SHA256 | Source |
+|---------|--------|--------|
+| PoisonX.sys | `a5035cbd6c31616288aa66d98e5a25441ee38651fb5f330676319f921bb816a4` | [LOLDrivers](https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/) |
+| PoisonX10.sys | `d58df93524ead1a1f939438ef63b5a9e42aacec7463ed29878293382996640ce` | LOLDrivers |
+| PoisonX11.sys | `cc6b4e34a4c49ce2770615aa38b00ce479e236d34307f950cf5d8ad46b458627` | LOLDrivers |
+| PoisonX12.sys | `c070b4a5614cb234de0faaef4e131b0cfe127682dc4cc89856e1ebfe775f4725` | LOLDrivers |
+| PoisonX13.sys | `50870b82104a309c107ad6ed50c023324fd73b6908a52f6070f47b8d247323c9` | LOLDrivers |
+| PoisonX14.sys | `6452ca681dd818a36ec538fe2d83a795f98e14970855964520294726dedd742b` | LOLDrivers |
+| PoisonX15.sys | `846b2f282925d7ddccd41f46f0048bc1f424fe44ccb110ed45ece8637fbece5d` | LOLDrivers |
+| PoisonX16.sys | `103b1bbe9d257e3ae6b83befdc53cad0e5432ade535b1f85dd6fddd4356d4898` | LOLDrivers |
+| PoisonX17.sys | `6f24ed64cba4ed0901592770a3aead821317a85efa886bd51f1afc6cb1166990` | LOLDrivers |
+| PoisonX18.sys | `1d9ae1467e604469798d272755afcf845b5efcd588863ad9e2aa3e3cf112985a` | LOLDrivers |
+| Unnamed variant | `6fbaad2f00afaa94723fa7d5bd46e7ea4babb7ce478a8e7229ce7bd4b85e0f51` | [Medium/@jehadbudagga](https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4) |
+
+All PoisonX variants signed by "Microsoft Windows Hardware Compatibility Publisher" (cert serial `330000006e1229856f0ade6cfc00000000006e`, issued by Microsoft Windows Third Party Component CA 2014). [Source: LOLDrivers]
+
+### Event log detection
+
+| Event ID | Log Source | What it catches | Notes |
+|----------|-----------|----------------|-------|
+| **Sysmon 6** | Sysmon | Driver loaded | Primary detection. Logs driver path, hashes, and signature. Requires Sysmon deployed. [Black Hills InfoSec, Cisco Talos] |
+| **System 7045** | Service Control Manager | New service installed | Catches `sc create ... type=kernel`. Note: the PoisonKiller_bof variant uses NtLoadDriver directly to bypass this event. [Microsoft Learn] |
+| **Security 4697** | Security log | Service installed | Similar to 7045 but in Security log. Also bypassed by NtLoadDriver. [Microsoft Learn] |
+| **Sysmon 13** | Sysmon | Registry value set | Catches `HKLM\SYSTEM\CurrentControlSet\Services\<name>` creation for driver registration. [Sysmon docs] |
+| **CodeIntegrity 3099** | CodeIntegrity Operational | App Control policy active | Confirms WDAC/driver blocklist deployment. Path: Applications and Services Logs > Microsoft > Windows > CodeIntegrity > Operational. [Microsoft Learn] |
+
+**Query for past Rentdrv2/PoisonX driver loads (Sysmon):**
+```powershell
+Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-Sysmon/Operational'; Id=6} |
+  Where-Object { $_.Message -match 'rentdrv2|PoisonX|F8284233' }
+```
+
+**Query for suspicious kernel service creation:**
+```powershell
+Get-WinEvent -FilterHashtable @{LogName='System'; Id=7045} |
+  Where-Object { $_.Message -match 'kernel|rentdrv2|PoisonX' }
+```
+
+**EDR silence detection:** If your EDR agent stops reporting telemetry, that silence is itself an indicator. Centralized monitoring should alert when any endpoint goes quiet unexpectedly.
+
+### Detection rules
+
+**Sigma (SigmaHQ):**
+- "Vulnerable Driver Load" (ID: `7aaaf4b8-e47c-4295-92ee-6ed40a6f60c8`) matches against 1,200+ MD5/SHA1 hashes from LOLDrivers. MITRE ATT&CK: T1543.003, T1068. [Source: detection.fyi](https://detection.fyi/sigmahq/sigma/windows/driver_load/driver_load_win_vuln_drivers/)
+- "Vulnerable Driver Load By Name" (ID: `72cd00d6-490c-4650-86ff-1d11f491daa1`) matches against 296 driver filenames. Note: Rentdrv2 and PoisonX are **not currently in this rule's name list** and would need to be added manually. [Source: detection.fyi](https://detection.fyi/sigmahq/sigma/windows/driver_load/driver_load_win_vuln_drivers_names/)
+
+**Splunk:**
+- "Windows Vulnerable Driver Loaded" (ID: `a2b1f1ef-221f-4187-b2a4-d4b08ec745f4`) uses Sysmon EventCode=6 cross-referenced against the LOLDrivers lookup table. [Source: Splunk Security Content](https://research.splunk.com/endpoint/a2b1f1ef-221f-4187-b2a4-d4b08ec745f4/)
+
+**LOLDrivers detection artifacts** (auto-generated from the driver catalog, covers both Rentdrv2 and PoisonX):
+- YARA rules: `detections/yara/yara-rules_vuln_drivers_strict.yar`
+- Sigma rules: `detections/sigma/` directory
+- Sysmon config: `detections/sysmon/sysmon_config_vulnerable_hashes_block.xml`
+- [Source: loldrivers.io](https://www.loldrivers.io/)
+
+**Microsoft Defender ASR rule:**
+- "Block abuse of exploited vulnerable signed drivers"
+- GUID: `56a863a9-875e-4185-98a7-b882c64b5ce5`
+- [Source: Microsoft Learn](https://learn.microsoft.com/en-us/defender-endpoint/attack-surface-reduction-rules-reference)
+
+### Forensic triage: has this already happened?
+
+If you suspect this driver was used in your environment, check for these artifacts:
+
+**Registry:**
+- `HKLM\SYSTEM\CurrentControlSet\Services\<driver_name>` created when using `sc create` to register the driver
+- Note: the PoisonKiller_bof (Cobalt Strike BOF) variant creates a randomly-named 8-character service key and deletes it after use, making registry evidence transient [GitHub/Muz1K1zuM]
+
+**File system:**
+- Known drop path observed in the wild: `C:\AU_Data\1721289943.sys` (renamed rentdrv2.sys, observed by CrowdStrike in a real intrusion) [Source: CrowdStrike blog](https://www.crowdstrike.com/en-us/blog/falcon-prevents-vulnerable-driver-attacks-real-world-intrusion/)
+- Common drop locations: `C:\Windows\Temp\`, `C:\Windows\System32\drivers\`, or user-writable directories
+- Search for files matching any of the SHA256 hashes listed above
+
+**Device path:**
+- `\\.\{F8284233-48F4-4680-ADDD-F8284233}` is the symbolic link for the PoisonX device. Any reference to this GUID in logs, memory dumps, or forensic images is a strong indicator.
+
+### Real-world threat actor usage
+
+This is not theoretical. Active ransomware groups use this driver in production attacks:
+
+- **Agonizing Serpens (Agrius)**: Iranian APT, used Rentdrv2 via custom loader `drvIX.exe` against Israeli higher education and tech sector targets since October 2023 [Source: Palo Alto Unit 42]
+- **DragonForce ransomware**: Uses Rentdrv2.sys (BadRentdrv2) as one of two BYOVD backends. Config field `use_sys=2` selects rentdrv2.sys. [Source: S2W Medium](https://medium.com/s2wblog/detailed-analysis-of-dragonforce-ransomware-25d1a91a4509), [Acronis TRU](https://www.acronis.com/en/tru/posts/the-dragonforce-cartel-scattered-spider-at-the-gate/)
+
 ---
 
 ## Confidence Assessment
@@ -226,6 +361,23 @@ Source: [NVD CVE-2023-44976](https://nvd.nist.gov/vuln/detail/CVE-2023-44976), [
 ### Threat Intelligence
 
 - Palo Alto Networks Unit 42. "Agonizing Serpens (Aka Agrius) Targeting the Israeli Higher Education and Tech Sectors." https://unit42.paloaltonetworks.com/agonizing-serpens-targets-israeli-tech-higher-ed-sectors/
+- CrowdStrike. "Falcon Prevents Vulnerable Driver Attacks in Real-World Intrusion." https://www.crowdstrike.com/en-us/blog/falcon-prevents-vulnerable-driver-attacks-real-world-intrusion/
+- S2W. "Detailed Analysis of DragonForce Ransomware." Medium. https://medium.com/s2wblog/detailed-analysis-of-dragonforce-ransomware-25d1a91a4509
+- Acronis TRU. "The DragonForce Cartel: Scattered Spider at the Gate." https://www.acronis.com/en/tru/posts/the-dragonforce-cartel-scattered-spider-at-the-gate/
+
+### Driver Databases
+
+- LOLDrivers. "Rentdrv2 entry." https://www.loldrivers.io/drivers/afb8bb46-1d13-407d-9866-1daa7c82ca63/
+- LOLDrivers. "PoisonX entry." https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/
+- keowu/BadRentdrv2. GitHub. https://github.com/keowu/BadRentdrv2
+
+### Detection Rules
+
+- SigmaHQ. "Vulnerable Driver Load." https://detection.fyi/sigmahq/sigma/windows/driver_load/driver_load_win_vuln_drivers/
+- Splunk. "Windows Vulnerable Driver Loaded." https://research.splunk.com/endpoint/a2b1f1ef-221f-4187-b2a4-d4b08ec745f4/
+- Microsoft Learn. "Attack Surface Reduction Rules Reference." https://learn.microsoft.com/en-us/defender-endpoint/attack-surface-reduction-rules-reference
+- Microsoft Learn. "Microsoft Recommended Driver Block Rules." https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/microsoft-recommended-driver-block-rules
+- HotCakeX. "Harden-Windows-Security WDAC Notes." https://github.com/HotCakeX/Harden-Windows-Security/wiki/WDAC-Notes
 
 ### Vulnerability Databases
 
