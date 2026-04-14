@@ -36,26 +36,31 @@ summary: "IOCTL 0x22E010 is a vendor-defined buffered I/O control code used by t
 
 ## Executive Summary
 
-IOCTL 0x22E010 is a kernel-level process termination control code exposed by the Rentdrv2 driver (Hangzhou Shunwang Technology). When called from kernel mode, it bypasses Windows Protected Process Light (PPL) to kill any process, including CrowdStrike Falcon and other EDR products. The driver carries a valid Microsoft signature and had zero antivirus detections at time of discovery.
+IOCTL 0x22E010 is a process termination control code exposed by the Rentdrv2 driver (Hangzhou Shunwang Technology). A user-mode application sends the IOCTL to the driver, which then executes process termination from kernel mode, bypassing user-mode access restrictions such as PPL (Protected Process Light) enforcement that would block ordinary process open/terminate attempts. This allows it to kill processes including CrowdStrike Falcon and other EDR products. The driver carries a valid Microsoft signature and had zero antivirus detections at time of discovery.
 
-While a vendor patch exists (versions after 2024-12-24), it does not mitigate the real-world threat. In BYOVD (Bring Your Own Vulnerable Driver) attacks, adversaries drop their own copy of the old, pre-patch signed binary onto the target system. Because the Microsoft signature remains valid, Windows loads it without complaint. The patch only fixes the vendor's distribution, not the attacker's copy. This technique has been weaponized in the wild since October 2023 by the Iranian APT group [Agonizing Serpens (Agrius)](https://unit42.paloaltonetworks.com/agonizing-serpens-targets-israeli-tech-higher-ed-sectors/) against Israeli targets.
+A vendor patch exists (versions after 2024-12-24) that reduces exposure for legitimate deployments, but it does not by itself neutralize BYOVD (Bring Your Own Vulnerable Driver) use of older signed copies. In BYOVD attacks, adversaries drop their own copy of the old, pre-patch signed binary onto the target system. Because the Microsoft signature remains valid, Windows loads it without complaint. Organizations still need blocklisting or App Control enforcement to prevent those binaries from loading. This technique has been weaponized in the wild since October 2023 by the Iranian APT group [Agonizing Serpens (Agrius)](https://unit42.paloaltonetworks.com/agonizing-serpens-targets-israeli-tech-higher-ed-sectors/) against Israeli targets.
 
 **Why this is in the news now (April 2026):** The vulnerability has been exploited since October 2023, but a [full reverse engineering walkthrough](https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4) and working proof-of-concept ([PoisonKiller](https://github.com/Nekr0w/poisonkiller)) were publicly released this week. Ten PoisonX driver variants were [cataloged on LOLDrivers](https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/) on April 10. The barrier to replicate this attack has dropped significantly.
 
-**What you can do now:** Confirm [HVCI](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/microsoft-recommended-driver-block-rules) is enabled on your endpoints, verify the Microsoft Vulnerable Driver Blocklist is current, and enable the Defender ASR rule "Block abuse of exploited vulnerable signed drivers" (GUID: `56a863a9-875e-4185-98a7-b882c64b5ce5`). PowerShell commands and detection rules are in the [IT Operations Guide](#it-operations-guide) below.
+**What you can do now:** Confirm [HVCI](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/microsoft-recommended-driver-block-rules) is enabled on your endpoints, verify the Microsoft Vulnerable Driver Blocklist is current, and enable the Defender ASR rule "Block abuse of exploited vulnerable signed drivers" (GUID: `56a863a9-875e-4185-98a7-b882c64b5ce5`). Note: the ASR rule prevents writing a vulnerable driver to disk but does not block loading one already present. Use it alongside HVCI and the blocklist. PowerShell commands and detection rules are in the [IT Operations Guide](#it-operations-guide) below.
 
-Effective mitigation requires Microsoft to revoke the driver's signature or add its hashes to the [Windows Driver Blocklist (WDAC)](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/microsoft-recommended-driver-block-rules). Until then, organizations should enforce HVCI (Hypervisor-protected Code Integrity) and monitor for driver loads, the device path `\\.\{F8284233-48F4-4680-ADDD-F8284233}`, and IOCTL 0x22E010 calls.
+At the ecosystem level, the strongest mitigation would be certificate revocation or inclusion in Microsoft's [Vulnerable Driver Blocklist](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/microsoft-recommended-driver-block-rules). At the organization level, HVCI (Hypervisor-protected Code Integrity), App Control for Business, and an up-to-date driver blocklist are the most practical controls. Detection should focus on driver loads, the device path `\\.\{F8284233-48F4-4680-ADDD-F8284233}`, and unexpected EDR telemetry loss.
 
 ---
 
 ## Current Status
 
+**Confirmed facts:**
 - **IOCTL 0x22E010** is a process-termination control code exposed by the Rentdrv2/PoisonX Windows kernel driver
-- Assigned **CVE-2023-44976** (CWE-782: Exposed IOCTL with Insufficient Access Control), CVSS 3.2 Low
+- Assigned **CVE-2023-44976** (CWE-782: Exposed IOCTL with Insufficient Access Control), CVSS 3.2 Low per MITRE-provided vector
 - Exploited in the wild since **October 2023** by the Iranian-backed APT group Agonizing Serpens (Agrius) in attacks against Israeli higher education and tech sectors ([Palo Alto Unit 42](https://unit42.paloaltonetworks.com/agonizing-serpens-targets-israeli-tech-higher-ed-sectors/))
-- Multiple public proof-of-concept tools exist: [PoisonKiller](https://github.com/Nekr0w/poisonkiller), [BadRentdrv2](https://github.com/keowu/BadRentdrv2), [PoisonX-Killer](https://github.com/BlackSnufkin/BYOVD/blob/main/PoisonX-Killer/src/main.rs)
-- The driver carries a valid Microsoft signature (signed 2025-03-25), with **0/71 VirusTotal detection rate** as of the PoisonKiller PoC publication ([GitHub/Nekr0w](https://github.com/Nekr0w/poisonkiller))
+- Known vulnerable Rentdrv2/PoisonX variants have been observed with valid Microsoft signatures. Signature metadata varies by sample.
 - Vendor patch available: Rentdrv2 versions after 2024-12-24 address the vulnerability ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2023-44976))
+
+**Time-sensitive observations (as of April 2026):**
+- Multiple public proof-of-concept tools now available: [PoisonKiller](https://github.com/Nekr0w/poisonkiller), [BadRentdrv2](https://github.com/keowu/BadRentdrv2), [PoisonX-Killer](https://github.com/BlackSnufkin/BYOVD/blob/main/PoisonX-Killer/src/main.rs)
+- One variant was reported as **0/71 on VirusTotal** at the time the PoC author documented the sample; detection rates are inherently unstable and may have changed ([GitHub/Nekr0w](https://github.com/Nekr0w/poisonkiller))
+- Ten PoisonX variants [cataloged on LOLDrivers](https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/) as of April 10, 2026
 
 ---
 
@@ -117,11 +122,11 @@ IOCTL 0x22E010 belongs to the **Rentdrv2** driver, developed by Hangzhou Shunwan
 | Vendor | Hangzhou Shunwang Technology |
 | Signature | Microsoft Windows Hardware Compatibility Publisher |
 | Device Path | `\\.\{F8284233-48F4-4680-ADDD-F8284233}` |
-| VT Detection | 0/71 (at time of PoC publication) |
+| VT Detection | 0/71 (at time PoC author documented the sample; may have changed) |
 
 ### What the driver does
 
-Rentdrv2 is a legitimate internet cafe management driver used in China. Its intended purpose is to manage user sessions and system resources in rental computer environments. However, its IOCTL dispatch handler exposes a process termination function that operates at kernel level, bypassing all user-mode protections.
+Rentdrv2 is a legitimate internet cafe management driver used in China. Its intended purpose is to manage user sessions and system resources in rental computer environments. However, its IOCTL dispatch handler exposes a process termination function that executes from kernel mode, bypassing user-mode access restrictions such as PPL enforcement that would block ordinary user-mode process open/terminate attempts.
 
 ### The kill mechanism
 
@@ -151,7 +156,7 @@ Method: METHOD_BUFFERED (via Irp->AssociatedIrp.SystemBuffer)
 2. **Load via service**: Create a kernel service (`sc create ... type=kernel binPath=...`) and start it
 3. **Open device**: Call `CreateFileW` with device path `\\.\{F8284233-48F4-4680-ADDD-F8284233}`
 4. **Send kill IOCTL**: Call `DeviceIoControl` with control code 0x22E010, passing the target PID as input
-5. **EDR dies**: The kernel-level termination bypasses PPL, killing CrowdStrike Falcon, Defender, or any other EDR process
+5. **EDR process terminated**: The driver executes termination from kernel mode, bypassing PPL restrictions that would block user-mode attempts against CrowdStrike Falcon, Defender, and similar protected processes
 
 The driver loads without triggering code-integrity checks because it carries a valid Microsoft signature ([GitHub/Nekr0w](https://github.com/Nekr0w/poisonkiller)).
 
@@ -206,7 +211,7 @@ For reverse engineering any unknown IOCTL:
 |-------|-------|
 | CVE ID | [CVE-2023-44976](https://nvd.nist.gov/vuln/detail/CVE-2023-44976) |
 | CWE | CWE-782: Exposed IOCTL with Insufficient Access Control |
-| CVSS 3.1 | 3.2 (Low) |
+| CVSS 3.1 | 3.2 (Low) per MITRE-provided vector |
 | Vector | AV:L/AC:L/PR:H/UI:N/S:C/C:N/I:N/A:L |
 | Affected | Hangzhou Shunwang Rentdrv2 before 2024-12-24 |
 | Exploited in Wild | October 2023 |
@@ -215,13 +220,13 @@ For reverse engineering any unknown IOCTL:
 
 Source: [NVD CVE-2023-44976](https://nvd.nist.gov/vuln/detail/CVE-2023-44976), [Feedly CVE feed](https://feedly.com/cve/CVE-2023-44976)
 
-**Note on CVSS score**: The 3.2 Low rating is arguably understated. While the attack vector is local and requires high privileges (admin to load a driver), the scope is changed (S:C) because it affects processes outside the vulnerable component's security context. The real-world impact of killing EDR processes to enable further attacks is substantially higher than the base score suggests.
+**Note on CVSS score**: The 3.2 Low rating (from the MITRE-provided vector in the CVE record; NVD's own assessment fields currently show N/A) is arguably understated. While the attack vector is local and requires high privileges (admin to load a driver), the scope is changed (S:C) because it affects processes outside the vulnerable component's security context. The real-world impact of killing EDR processes to enable further attacks is substantially higher than the base score suggests.
 
 ### Threat landscape
 
 - The vulnerability sat in **reserved CVE status for over a year** before publication (wild exploitation October 2023, NVD published August 2025) ([Feedly](https://feedly.com/cve/CVE-2023-44976))
 - Multiple public PoC repositories exist on GitHub, lowering the barrier for copycat attacks
-- The BYOVD technique using this driver is effective against any EDR that relies on PPL for process protection, not just CrowdStrike ([GitHub/Muz1K1zuM](https://github.com/Muz1K1zuM/PoisonKiller_bof))
+- The BYOVD technique using this driver is potentially effective against EDR products whose protection model depends heavily on keeping critical services protected from user-mode termination, not just CrowdStrike. Individual products may layer additional self-defense logic, kernel callbacks, or recovery mechanisms. ([GitHub/Muz1K1zuM](https://github.com/Muz1K1zuM/PoisonKiller_bof))
 
 ### Detection opportunities
 
@@ -229,7 +234,7 @@ Source: [NVD CVE-2023-44976](https://nvd.nist.gov/vuln/detail/CVE-2023-44976), [
 2. **Device path monitoring**: Watch for `CreateFile` calls targeting `\\.\{F8284233-48F4-4680-ADDD-F8284233}`
 3. **IOCTL monitoring**: Detect `DeviceIoControl` calls with code 0x22E010
 4. **Driver hash blocklisting**: Add known Rentdrv2/PoisonX driver hashes to WDAC or HVCI blocklists
-5. **Kernel callback routines**: Implement `PsSetCreateProcessNotifyRoutine` callbacks to detect unauthorized kernel-initiated process termination
+5. **EDR telemetry loss**: Prioritize agent heartbeat-loss detection. If an EDR agent goes silent unexpectedly, treat that as a high-priority indicator rather than trying to infer kernel-initiated termination directly
 
 ### Why the CVSS 3.2 "Low" score is misleading
 
@@ -245,7 +250,7 @@ This section is written for IT staff who need to assess exposure, detect this at
 
 1. **Verify HVCI is enabled** on all Windows endpoints (see commands below)
 2. **Verify the Microsoft Vulnerable Driver Blocklist is active** and current
-3. **Enable the ASR rule** "Block abuse of exploited vulnerable signed drivers" (GUID: `56a863a9-875e-4185-98a7-b882c64b5ce5`) ([Microsoft Learn](https://learn.microsoft.com/en-us/defender-endpoint/attack-surface-reduction-rules-reference))
+3. **Enable the ASR rule** "Block abuse of exploited vulnerable signed drivers" (GUID: `56a863a9-875e-4185-98a7-b882c64b5ce5`) ([Microsoft Learn](https://learn.microsoft.com/en-us/defender-endpoint/attack-surface-reduction-rules-reference)). Important: this rule helps prevent a vulnerable driver from being written to disk, but it does not stop loading of a driver that is already present on the system.
 4. **Deploy Sysmon** if not already running, with driver load logging (Event ID 6)
 5. **Search historical logs** for indicators of past compromise (see Forensic Triage below)
 6. **Add driver hashes** to your blocklist if using a custom WDAC policy
@@ -304,7 +309,7 @@ All PoisonX variants signed by "Microsoft Windows Hardware Compatibility Publish
 | Event ID | Log Source | What it catches | Notes |
 |----------|-----------|----------------|-------|
 | **[Sysmon 6](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-6-driver-loaded)** | Sysmon | Driver loaded | Primary detection. Logs driver path, hashes, and signature. Requires Sysmon deployed. |
-| **[System 7045](https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4697)** | Service Control Manager | New service installed | Catches `sc create ... type=kernel`. Note: the [PoisonKiller_bof](https://github.com/Muz1K1zuM/PoisonKiller_bof) variant uses NtLoadDriver directly to bypass this event. |
+| **System 7045** | Service Control Manager | New service installed | Catches `sc create ... type=kernel`. Note: the [PoisonKiller_bof](https://github.com/Muz1K1zuM/PoisonKiller_bof) variant uses NtLoadDriver directly to bypass this event. |
 | **[Security 4697](https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4697)** | Security log | Service installed | Similar to 7045 but in Security log. Also bypassed by NtLoadDriver. |
 | **[Sysmon 13](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-13-registryevent-value-set)** | Sysmon | Registry value set | Catches `HKLM\SYSTEM\CurrentControlSet\Services\<name>` creation for driver registration. |
 | **CodeIntegrity 3099** | CodeIntegrity Operational | App Control policy active | Confirms WDAC/driver blocklist deployment. Path: Applications and Services Logs > Microsoft > Windows > CodeIntegrity > Operational. ([Microsoft Learn](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/microsoft-recommended-driver-block-rules)) |
@@ -341,6 +346,7 @@ Get-WinEvent -FilterHashtable @{LogName='System'; Id=7045} |
 **Microsoft Defender ASR rule:**
 - "Block abuse of exploited vulnerable signed drivers"
 - GUID: `56a863a9-875e-4185-98a7-b882c64b5ce5`
+- Note: this rule prevents an application from writing a vulnerable signed driver to disk. It does not block a driver that is already present on the system from loading. Use in combination with the vulnerable driver blocklist and HVCI, not as a standalone control.
 - [Source: Microsoft Learn](https://learn.microsoft.com/en-us/defender-endpoint/attack-surface-reduction-rules-reference)
 
 ### Forensic triage: has this already happened?
@@ -378,7 +384,7 @@ This is not theoretical. Active ransomware groups use this driver in production 
 | CVE-2023-44976 details | **High** | Sourced directly from NVD |
 | Agonizing Serpens attribution | **High** | Sourced from Palo Alto Unit 42 threat intelligence report |
 | CVSS score being understated | **Medium** | Analytical judgment; the base score follows CVSS methodology but doesn't capture chained attack impact |
-| 0/71 VT detection rate | **Medium** | Reported in PoisonKiller PoC README; may have changed since publication |
+| 0/71 VT detection rate | **Medium** | Reported as 0/71 at the time the PoC author documented the sample; detection rates are inherently unstable and may have changed |
 
 ---
 
