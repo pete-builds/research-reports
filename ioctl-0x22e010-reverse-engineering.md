@@ -440,3 +440,11 @@ This is not theoretical. Active ransomware groups use this driver in production 
 - OSR IOCTL Decoder (online). Referenced but not fetched.
 - z4ksec. ["IoctlHunter Release (v0.2)."](https://z4ksec.github.io/posts/ioctlhunter-release-v0.2/)
 - daaximus. ["Most IOCTLs mapped to their code names."](https://gist.github.com/daaximus/e813aa52980fc2a97a8a8a1082338de4) GitHub Gist.
+
+---
+
+## How This Report Was Made
+
+This report was generated using Claude Code (Anthropic) as a research and drafting tool. The author directed the research scope, reviewed all claims for accuracy, and applied editorial judgment throughout. All factual claims are grounded in cited sources that were fetched and verified during the research process.
+
+**Disclaimer:** This report is provided for informational and defensive security purposes only. While every effort has been made to ensure accuracy, security research involves rapidly evolving information. Claims are tagged with confidence levels where appropriate. Readers should independently verify critical findings before making security decisions. The author is not responsible for actions taken based on this report. Detection rates, blocklist status, and threat actor activity are time-sensitive and may have changed since publication.
