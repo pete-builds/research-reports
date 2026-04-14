@@ -7,6 +7,32 @@ summary: "IOCTL 0x22E010 is a vendor-defined buffered I/O control code used by t
 
 # Reverse Engineering IOCTL 0x22E010: The EDR-Killing Control Code
 
+## Table of Contents
+
+1. [Executive Summary](#executive-summary)
+2. [Current Status](#current-status)
+3. [IOCTL Bit Field Breakdown](#ioctl-bit-field-breakdown)
+4. [The Driver: Rentdrv2 / PoisonX](#the-driver-rentdrv2--poisonx)
+5. [Attack Pattern: BYOVD](#attack-pattern-byovd-bring-your-own-vulnerable-driver)
+6. [Reverse Engineering Methodology](#reverse-engineering-methodology)
+7. [Security Analysis](#security-analysis)
+   - [CVE-2023-44976](#cve-2023-44976)
+   - [Threat Landscape](#threat-landscape)
+   - [Detection Opportunities](#detection-opportunities)
+   - [Why the CVSS 3.2 "Low" Score is Misleading](#why-the-cvss-32-low-score-is-misleading)
+8. [IT Operations Guide](#it-operations-guide)
+   - [Immediate Action Checklist](#immediate-action-checklist)
+   - [Check Your Protection Status](#check-your-protection-status)
+   - [Known Driver Hashes for Blocklisting](#known-driver-hashes-for-blocklisting)
+   - [Event Log Detection](#event-log-detection)
+   - [Detection Rules](#detection-rules)
+   - [Forensic Triage](#forensic-triage-has-this-already-happened)
+   - [Real-World Threat Actor Usage](#real-world-threat-actor-usage)
+9. [Confidence Assessment](#confidence-assessment)
+10. [Sources](#sources)
+
+---
+
 ## Executive Summary
 
 IOCTL 0x22E010 is a kernel-level process termination control code exposed by the Rentdrv2 driver (Hangzhou Shunwang Technology). When called from kernel mode, it bypasses Windows Protected Process Light (PPL) to kill any process, including CrowdStrike Falcon and other EDR products. The driver carries a valid Microsoft signature and had zero antivirus detections at time of discovery.
