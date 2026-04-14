@@ -1,11 +1,12 @@
 ---
-title: "Reverse Engineering IOCTL 0x22E010: The EDR-Killing Control Code"
+title: "Signed Driver Used to Kill CrowdStrike EDR"
 date: 2026-04-14
 updated: 2026-04-14
 summary: "IOCTL 0x22E010 is a vendor-defined buffered I/O control code used by the Rentdrv2/PoisonX kernel driver to terminate arbitrary processes, including PPL-protected EDR services. It is associated with CVE-2023-44976 and has been weaponized in BYOVD attacks by the Agonizing Serpens (Agrius) APT group since October 2023."
 ---
 
-# Reverse Engineering IOCTL 0x22E010: The EDR-Killing Control Code
+# Signed Driver Used to Kill CrowdStrike EDR
+### Reverse Engineering IOCTL 0x22E010: The EDR-Killing Control Code
 
 ## Table of Contents
 
