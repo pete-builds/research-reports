@@ -37,9 +37,9 @@ summary: "IOCTL 0x22E010 is a vendor-defined buffered I/O control code used by t
 
 IOCTL 0x22E010 is a kernel-level process termination control code exposed by the Rentdrv2 driver (Hangzhou Shunwang Technology). When called from kernel mode, it bypasses Windows Protected Process Light (PPL) to kill any process, including CrowdStrike Falcon and other EDR products. The driver carries a valid Microsoft signature and had zero antivirus detections at time of discovery.
 
-While a vendor patch exists (versions after 2024-12-24), it does not mitigate the real-world threat. In BYOVD (Bring Your Own Vulnerable Driver) attacks, adversaries drop their own copy of the old, pre-patch signed binary onto the target system. Because the Microsoft signature remains valid, Windows loads it without complaint. The patch only fixes the vendor's distribution, not the attacker's copy. This technique has been weaponized in the wild since October 2023 by the Iranian APT group Agonizing Serpens (Agrius) against Israeli targets.
+While a vendor patch exists (versions after 2024-12-24), it does not mitigate the real-world threat. In BYOVD (Bring Your Own Vulnerable Driver) attacks, adversaries drop their own copy of the old, pre-patch signed binary onto the target system. Because the Microsoft signature remains valid, Windows loads it without complaint. The patch only fixes the vendor's distribution, not the attacker's copy. This technique has been weaponized in the wild since October 2023 by the Iranian APT group [Agonizing Serpens (Agrius)](https://unit42.paloaltonetworks.com/agonizing-serpens-targets-israeli-tech-higher-ed-sectors/) against Israeli targets.
 
-Effective mitigation requires Microsoft to revoke the driver's signature or add its hashes to the Windows Driver Blocklist (WDAC). Until then, organizations should enforce HVCI (Hypervisor-protected Code Integrity) and monitor for driver loads, the device path `\\.\{F8284233-48F4-4680-ADDD-F8284233}`, and IOCTL 0x22E010 calls.
+Effective mitigation requires Microsoft to revoke the driver's signature or add its hashes to the [Windows Driver Blocklist (WDAC)](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/microsoft-recommended-driver-block-rules). Until then, organizations should enforce HVCI (Hypervisor-protected Code Integrity) and monitor for driver loads, the device path `\\.\{F8284233-48F4-4680-ADDD-F8284233}`, and IOCTL 0x22E010 calls.
 
 ---
 
@@ -47,16 +47,16 @@ Effective mitigation requires Microsoft to revoke the driver's signature or add 
 
 - **IOCTL 0x22E010** is a process-termination control code exposed by the Rentdrv2/PoisonX Windows kernel driver
 - Assigned **CVE-2023-44976** (CWE-782: Exposed IOCTL with Insufficient Access Control), CVSS 3.2 Low
-- Exploited in the wild since **October 2023** by the Iranian-backed APT group Agonizing Serpens (Agrius) in attacks against Israeli higher education and tech sectors [Palo Alto Unit 42]
-- Multiple public proof-of-concept tools exist (PoisonKiller, BadRentdrv2, PoisonX-Killer) [GitHub]
-- The driver carries a valid Microsoft signature (signed 2025-03-25), with **0/71 VirusTotal detection rate** as of the PoisonKiller PoC publication [GitHub/Nekr0w]
-- Vendor patch available: Rentdrv2 versions after 2024-12-24 address the vulnerability [NVD]
+- Exploited in the wild since **October 2023** by the Iranian-backed APT group Agonizing Serpens (Agrius) in attacks against Israeli higher education and tech sectors ([Palo Alto Unit 42](https://unit42.paloaltonetworks.com/agonizing-serpens-targets-israeli-tech-higher-ed-sectors/))
+- Multiple public proof-of-concept tools exist: [PoisonKiller](https://github.com/Nekr0w/poisonkiller), [BadRentdrv2](https://github.com/keowu/BadRentdrv2), [PoisonX-Killer](https://github.com/BlackSnufkin/BYOVD/blob/main/PoisonX-Killer/src/main.rs)
+- The driver carries a valid Microsoft signature (signed 2025-03-25), with **0/71 VirusTotal detection rate** as of the PoisonKiller PoC publication ([GitHub/Nekr0w](https://github.com/Nekr0w/poisonkiller))
+- Vendor patch available: Rentdrv2 versions after 2024-12-24 address the vulnerability ([NVD](https://nvd.nist.gov/vuln/detail/CVE-2023-44976))
 
 ---
 
 ## IOCTL Bit Field Breakdown
 
-The Windows `CTL_CODE` macro encodes four fields into a 32-bit IOCTL value:
+The Windows [`CTL_CODE`](https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/defining-i-o-control-codes) macro encodes four fields into a 32-bit IOCTL value:
 
 ```
 CTL_CODE(DeviceType, Function, Method, Access)
@@ -103,7 +103,7 @@ CTL_CODE(FILE_DEVICE_UNKNOWN, 0x804, METHOD_BUFFERED, FILE_READ_DATA | FILE_WRIT
 
 ### Identity
 
-IOCTL 0x22E010 belongs to the **Rentdrv2** driver, developed by Hangzhou Shunwang Technology. The driver has also been referred to as **PoisonX.sys** in PoC tooling. There are reportedly 15+ variants sharing identical code [Medium/@jehadbudagga].
+IOCTL 0x22E010 belongs to the **Rentdrv2** driver, developed by Hangzhou Shunwang Technology. The driver has also been referred to as **PoisonX.sys** in PoC tooling. There are reportedly 15+ variants sharing identical code ([Medium/@jehadbudagga](https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4)).
 
 | Property | Value |
 |----------|-------|
@@ -126,7 +126,7 @@ When IOCTL 0x22E010 is received, the driver:
 2. Calls `ZwOpenProcess` to obtain a kernel handle to the target process
 3. Calls `ZwTerminateProcess` to kill the process
 
-This is significant because `ZwOpenProcess` called from kernel mode bypasses Process Protection Light (PPL) restrictions. In user mode, `OpenProcess` against a PPL-protected process returns ACCESS_DENIED, but the kernel-mode `Zw*` functions operate with full privilege [Medium/@jehadbudagga].
+This is significant because `ZwOpenProcess` called from kernel mode bypasses Process Protection Light (PPL) restrictions. In user mode, `OpenProcess` against a PPL-protected process returns ACCESS_DENIED, but the kernel-mode `Zw*` functions operate with full privilege ([Medium/@jehadbudagga](https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4)).
 
 ### Input/Output format
 
@@ -148,11 +148,11 @@ Method: METHOD_BUFFERED (via Irp->AssociatedIrp.SystemBuffer)
 4. **Send kill IOCTL**: Call `DeviceIoControl` with control code 0x22E010, passing the target PID as input
 5. **EDR dies**: The kernel-level termination bypasses PPL, killing CrowdStrike Falcon, Defender, or any other EDR process
 
-The driver loads without triggering code-integrity checks because it carries a valid Microsoft signature [GitHub/Nekr0w].
+The driver loads without triggering code-integrity checks because it carries a valid Microsoft signature ([GitHub/Nekr0w](https://github.com/Nekr0w/poisonkiller)).
 
 ### Real-world usage
 
-**Agonizing Serpens (Agrius)** - an Iranian-backed APT group - weaponized Rentdrv2 in attacks against Israeli higher education and technology sector organizations starting in October 2023. The group used a custom loader called `drvIX.exe` to communicate with the driver. Palo Alto's Unit 42 documented this as an upgrade in the group's capabilities, noting they had not used BYOVD techniques in previous campaigns [Palo Alto Unit 42].
+**Agonizing Serpens (Agrius)** - an Iranian-backed APT group - weaponized Rentdrv2 in attacks against Israeli higher education and technology sector organizations starting in October 2023. The group used a custom loader called `drvIX.exe` to communicate with the driver. Palo Alto's Unit 42 documented this as an upgrade in the group's capabilities, noting they had not used BYOVD techniques in previous campaigns ([Palo Alto Unit 42](https://unit42.paloaltonetworks.com/agonizing-serpens-targets-israeli-tech-higher-ed-sectors/)).
 
 ---
 
@@ -164,16 +164,16 @@ The driver loads without triggering code-integrity checks because it carries a v
 |------|---------|-------|
 | **IDA Pro** | Static analysis/decompilation of the .sys driver | Primary tool used in the original RE analysis |
 | **Ghidra** | Free alternative to IDA for driver decompilation | NSA's reverse engineering framework |
-| **WinDbg** | Kernel debugging, `!ioctldecode` command | Built-in IOCTL decoder: `!ioctldecode 0x22E010` |
+| **WinDbg** | Kernel debugging, [`!ioctldecode`](https://learn.microsoft.com/en-us/windows-hardware/drivers/debuggercmds/-ioctldecode) command | Built-in IOCTL decoder: `!ioctldecode 0x22E010` |
 | **WinObj** (Sysinternals) | Discover device symbolic links at runtime | Used to find `\\.\{F8284233-48F4-4680-ADDD-F8284233}` |
 | **OSR IOCTL Decoder** | Online tool to decode CTL_CODE fields | Quick bit field breakdown |
 | **OSR Driver Loader** | Load/unload kernel drivers for testing | Used instead of `sc create` for lab environments |
-| **IoctlHunter** | Dynamic IOCTL monitoring via DLL injection | Captures IOCTLs in a controlled lab environment |
+| **[IoctlHunter](https://z4ksec.github.io/posts/ioctlhunter-release-v0.2/)** | Dynamic IOCTL monitoring via DLL injection | Captures IOCTLs in a controlled lab environment |
 | **VirusTotal** | Check driver signature and detection rate | Confirmed valid Microsoft signature |
 
 ### RE approach for this driver
 
-The original reverse engineer (Jehad Abudagga) documented the following approach [Medium/@jehadbudagga]:
+The original reverse engineer (Jehad Abudagga) documented the following approach ([Medium/@jehadbudagga](https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4)):
 
 1. **Skip the DriverEntry**: The `DriverEntry` function was heavily obfuscated/mangled. Instead of fighting the obfuscation, the analyst went directly to the **IRP dispatch handler** (the function registered for `IRP_MJ_DEVICE_CONTROL`)
 2. **Fix types and names**: IDA's initial decompilation output was difficult to read. Manual type annotation and variable renaming were required to produce clean pseudocode
@@ -199,7 +199,7 @@ For reverse engineering any unknown IOCTL:
 
 | Field | Value |
 |-------|-------|
-| CVE ID | CVE-2023-44976 |
+| CVE ID | [CVE-2023-44976](https://nvd.nist.gov/vuln/detail/CVE-2023-44976) |
 | CWE | CWE-782: Exposed IOCTL with Insufficient Access Control |
 | CVSS 3.1 | 3.2 (Low) |
 | Vector | AV:L/AC:L/PR:H/UI:N/S:C/C:N/I:N/A:L |
@@ -214,9 +214,9 @@ Source: [NVD CVE-2023-44976](https://nvd.nist.gov/vuln/detail/CVE-2023-44976), [
 
 ### Threat landscape
 
-- The vulnerability sat in **reserved CVE status for over a year** before publication (wild exploitation October 2023, NVD published August 2025) [Feedly]
+- The vulnerability sat in **reserved CVE status for over a year** before publication (wild exploitation October 2023, NVD published August 2025) ([Feedly](https://feedly.com/cve/CVE-2023-44976))
 - Multiple public PoC repositories exist on GitHub, lowering the barrier for copycat attacks
-- The BYOVD technique using this driver is effective against any EDR that relies on PPL for process protection, not just CrowdStrike [GitHub/Muz1K1zuM]
+- The BYOVD technique using this driver is effective against any EDR that relies on PPL for process protection, not just CrowdStrike ([GitHub/Muz1K1zuM](https://github.com/Muz1K1zuM/PoisonKiller_bof))
 
 ### Detection opportunities
 
@@ -228,7 +228,7 @@ Source: [NVD CVE-2023-44976](https://nvd.nist.gov/vuln/detail/CVE-2023-44976), [
 
 ### Why the CVSS 3.2 "Low" score is misleading
 
-The base score rates this as low-severity because the attack vector is local and requires admin privileges. In practice, this drastically understates the risk. Attackers who already have admin access use this driver as a force multiplier: they kill EDR first, then deploy ransomware, exfiltrate data, or persist undetected. The CVSS score measures the driver in isolation. The real-world impact is the chain: EDR dies, then the actual attack begins with no visibility. DragonForce ransomware uses Rentdrv2.sys as one of its two BYOVD backends (config field `use_sys=2`), confirming this is an active component in ransomware kill chains, not a theoretical risk [S2W Medium, Acronis TRU].
+The base score rates this as low-severity because the attack vector is local and requires admin privileges. In practice, this drastically understates the risk. Attackers who already have admin access use this driver as a force multiplier: they kill EDR first, then deploy ransomware, exfiltrate data, or persist undetected. The CVSS score measures the driver in isolation. The real-world impact is the chain: EDR dies, then the actual attack begins with no visibility. DragonForce ransomware uses Rentdrv2.sys as one of its two BYOVD backends (config field `use_sys=2`), confirming this is an active component in ransomware kill chains, not a theoretical risk ([S2W Medium](https://medium.com/s2wblog/detailed-analysis-of-dragonforce-ransomware-25d1a91a4509), [Acronis TRU](https://www.acronis.com/en/tru/posts/the-dragonforce-cartel-scattered-spider-at-the-gate/)).
 
 ---
 
@@ -240,7 +240,7 @@ This section is written for IT staff who need to assess exposure, detect this at
 
 1. **Verify HVCI is enabled** on all Windows endpoints (see commands below)
 2. **Verify the Microsoft Vulnerable Driver Blocklist is active** and current
-3. **Enable the ASR rule** "Block abuse of exploited vulnerable signed drivers" (GUID: `56a863a9-875e-4185-98a7-b882c64b5ce5`) [Microsoft Learn]
+3. **Enable the ASR rule** "Block abuse of exploited vulnerable signed drivers" (GUID: `56a863a9-875e-4185-98a7-b882c64b5ce5`) ([Microsoft Learn](https://learn.microsoft.com/en-us/defender-endpoint/attack-surface-reduction-rules-reference))
 4. **Deploy Sysmon** if not already running, with driver load logging (Event ID 6)
 5. **Search historical logs** for indicators of past compromise (see Forensic Triage below)
 6. **Add driver hashes** to your blocklist if using a custom WDAC policy
@@ -251,21 +251,21 @@ This section is written for IT staff who need to assess exposure, detect this at
 ```powershell
 Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\Microsoft\Windows\DeviceGuard
 ```
-Look for `VirtualizationBasedSecurityStatus`: 2 = Running, 1 = Enabled but not running, 0 = Not enabled. [Source: Microsoft Learn, HotCakeX/Harden-Windows-Security]
+Look for `VirtualizationBasedSecurityStatus`: 2 = Running, 1 = Enabled but not running, 0 = Not enabled. ([Microsoft Learn](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/microsoft-recommended-driver-block-rules), [HotCakeX/Harden-Windows-Security](https://github.com/HotCakeX/Harden-Windows-Security/wiki/WDAC-Notes))
 
 **Check WDAC / App Control policy status:**
 ```powershell
 Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\Microsoft\Windows\DeviceGuard | Select-Object -Property *codeintegrity* | Format-List
 ```
-Values: `2` = Enforced, `1` = Audit mode, `0` = Disabled. Both `UserModeCodeIntegrityPolicyEnforcementStatus` and `CodeIntegrityPolicyEnforcementStatus` (kernel mode) should be checked. [Source: HotCakeX/Harden-Windows-Security wiki]
+Values: `2` = Enforced, `1` = Audit mode, `0` = Disabled. Both `UserModeCodeIntegrityPolicyEnforcementStatus` and `CodeIntegrityPolicyEnforcementStatus` (kernel mode) should be checked. ([HotCakeX/Harden-Windows-Security](https://github.com/HotCakeX/Harden-Windows-Security/wiki/WDAC-Notes))
 
 **Refresh App Control policies after deploying blocklist updates:**
 ```powershell
 CITool --refresh
 ```
-[Source: Microsoft Learn driver block rules documentation]
+([Microsoft Learn](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/microsoft-recommended-driver-block-rules))
 
-**Note:** The Microsoft Vulnerable Driver Blocklist is enabled by default on Windows 11 (2022 update and later) and is enforced when HVCI, Smart App Control, or S mode is active. If you are running Windows 10 or have not enabled HVCI, the blocklist may not be enforced. [Source: Microsoft Learn]
+**Note:** The Microsoft Vulnerable Driver Blocklist is enabled by default on Windows 11 (2022 update and later) and is enforced when HVCI, Smart App Control, or S mode is active. If you are running Windows 10 or have not enabled HVCI, the blocklist may not be enforced. ([Microsoft Learn](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/microsoft-recommended-driver-block-rules))
 
 ### Known driver hashes for blocklisting
 
@@ -281,28 +281,28 @@ CITool --refresh
 | Variant | SHA256 | Source |
 |---------|--------|--------|
 | PoisonX.sys | `a5035cbd6c31616288aa66d98e5a25441ee38651fb5f330676319f921bb816a4` | [LOLDrivers](https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/) |
-| PoisonX10.sys | `d58df93524ead1a1f939438ef63b5a9e42aacec7463ed29878293382996640ce` | LOLDrivers |
-| PoisonX11.sys | `cc6b4e34a4c49ce2770615aa38b00ce479e236d34307f950cf5d8ad46b458627` | LOLDrivers |
-| PoisonX12.sys | `c070b4a5614cb234de0faaef4e131b0cfe127682dc4cc89856e1ebfe775f4725` | LOLDrivers |
-| PoisonX13.sys | `50870b82104a309c107ad6ed50c023324fd73b6908a52f6070f47b8d247323c9` | LOLDrivers |
-| PoisonX14.sys | `6452ca681dd818a36ec538fe2d83a795f98e14970855964520294726dedd742b` | LOLDrivers |
-| PoisonX15.sys | `846b2f282925d7ddccd41f46f0048bc1f424fe44ccb110ed45ece8637fbece5d` | LOLDrivers |
-| PoisonX16.sys | `103b1bbe9d257e3ae6b83befdc53cad0e5432ade535b1f85dd6fddd4356d4898` | LOLDrivers |
-| PoisonX17.sys | `6f24ed64cba4ed0901592770a3aead821317a85efa886bd51f1afc6cb1166990` | LOLDrivers |
-| PoisonX18.sys | `1d9ae1467e604469798d272755afcf845b5efcd588863ad9e2aa3e3cf112985a` | LOLDrivers |
+| PoisonX10.sys | `d58df93524ead1a1f939438ef63b5a9e42aacec7463ed29878293382996640ce` | [LOLDrivers](https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/) |
+| PoisonX11.sys | `cc6b4e34a4c49ce2770615aa38b00ce479e236d34307f950cf5d8ad46b458627` | [LOLDrivers](https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/) |
+| PoisonX12.sys | `c070b4a5614cb234de0faaef4e131b0cfe127682dc4cc89856e1ebfe775f4725` | [LOLDrivers](https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/) |
+| PoisonX13.sys | `50870b82104a309c107ad6ed50c023324fd73b6908a52f6070f47b8d247323c9` | [LOLDrivers](https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/) |
+| PoisonX14.sys | `6452ca681dd818a36ec538fe2d83a795f98e14970855964520294726dedd742b` | [LOLDrivers](https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/) |
+| PoisonX15.sys | `846b2f282925d7ddccd41f46f0048bc1f424fe44ccb110ed45ece8637fbece5d` | [LOLDrivers](https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/) |
+| PoisonX16.sys | `103b1bbe9d257e3ae6b83befdc53cad0e5432ade535b1f85dd6fddd4356d4898` | [LOLDrivers](https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/) |
+| PoisonX17.sys | `6f24ed64cba4ed0901592770a3aead821317a85efa886bd51f1afc6cb1166990` | [LOLDrivers](https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/) |
+| PoisonX18.sys | `1d9ae1467e604469798d272755afcf845b5efcd588863ad9e2aa3e3cf112985a` | [LOLDrivers](https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/) |
 | Unnamed variant | `6fbaad2f00afaa94723fa7d5bd46e7ea4babb7ce478a8e7229ce7bd4b85e0f51` | [Medium/@jehadbudagga](https://medium.com/@jehadbudagga/reverse-engineering-a-0day-used-against-crowdstrike-edr-a5ea1fbe3fd4) |
 
-All PoisonX variants signed by "Microsoft Windows Hardware Compatibility Publisher" (cert serial `330000006e1229856f0ade6cfc00000000006e`, issued by Microsoft Windows Third Party Component CA 2014). [Source: LOLDrivers]
+All PoisonX variants signed by "Microsoft Windows Hardware Compatibility Publisher" (cert serial `330000006e1229856f0ade6cfc00000000006e`, issued by Microsoft Windows Third Party Component CA 2014). ([LOLDrivers](https://www.loldrivers.io/drivers/fc3467c3-6109-447d-b438-7a4276c3d8e5/))
 
 ### Event log detection
 
 | Event ID | Log Source | What it catches | Notes |
 |----------|-----------|----------------|-------|
-| **Sysmon 6** | Sysmon | Driver loaded | Primary detection. Logs driver path, hashes, and signature. Requires Sysmon deployed. [Black Hills InfoSec, Cisco Talos] |
-| **System 7045** | Service Control Manager | New service installed | Catches `sc create ... type=kernel`. Note: the PoisonKiller_bof variant uses NtLoadDriver directly to bypass this event. [Microsoft Learn] |
-| **Security 4697** | Security log | Service installed | Similar to 7045 but in Security log. Also bypassed by NtLoadDriver. [Microsoft Learn] |
-| **Sysmon 13** | Sysmon | Registry value set | Catches `HKLM\SYSTEM\CurrentControlSet\Services\<name>` creation for driver registration. [Sysmon docs] |
-| **CodeIntegrity 3099** | CodeIntegrity Operational | App Control policy active | Confirms WDAC/driver blocklist deployment. Path: Applications and Services Logs > Microsoft > Windows > CodeIntegrity > Operational. [Microsoft Learn] |
+| **[Sysmon 6](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-6-driver-loaded)** | Sysmon | Driver loaded | Primary detection. Logs driver path, hashes, and signature. Requires Sysmon deployed. |
+| **[System 7045](https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4697)** | Service Control Manager | New service installed | Catches `sc create ... type=kernel`. Note: the [PoisonKiller_bof](https://github.com/Muz1K1zuM/PoisonKiller_bof) variant uses NtLoadDriver directly to bypass this event. |
+| **[Security 4697](https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4697)** | Security log | Service installed | Similar to 7045 but in Security log. Also bypassed by NtLoadDriver. |
+| **[Sysmon 13](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon#event-id-13-registryevent-value-set)** | Sysmon | Registry value set | Catches `HKLM\SYSTEM\CurrentControlSet\Services\<name>` creation for driver registration. |
+| **CodeIntegrity 3099** | CodeIntegrity Operational | App Control policy active | Confirms WDAC/driver blocklist deployment. Path: Applications and Services Logs > Microsoft > Windows > CodeIntegrity > Operational. ([Microsoft Learn](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/microsoft-recommended-driver-block-rules)) |
 
 **Query for past Rentdrv2/PoisonX driver loads (Sysmon):**
 ```powershell
@@ -344,10 +344,10 @@ If you suspect this driver was used in your environment, check for these artifac
 
 **Registry:**
 - `HKLM\SYSTEM\CurrentControlSet\Services\<driver_name>` created when using `sc create` to register the driver
-- Note: the PoisonKiller_bof (Cobalt Strike BOF) variant creates a randomly-named 8-character service key and deletes it after use, making registry evidence transient [GitHub/Muz1K1zuM]
+- Note: the [PoisonKiller_bof](https://github.com/Muz1K1zuM/PoisonKiller_bof) (Cobalt Strike BOF) variant creates a randomly-named 8-character service key and deletes it after use, making registry evidence transient
 
 **File system:**
-- Known drop path observed in the wild: `C:\AU_Data\1721289943.sys` (renamed rentdrv2.sys, observed by CrowdStrike in a real intrusion) [Source: CrowdStrike blog](https://www.crowdstrike.com/en-us/blog/falcon-prevents-vulnerable-driver-attacks-real-world-intrusion/)
+- Known drop path observed in the wild: `C:\AU_Data\1721289943.sys` (renamed rentdrv2.sys, observed by CrowdStrike in a real intrusion) ([CrowdStrike blog](https://www.crowdstrike.com/en-us/blog/falcon-prevents-vulnerable-driver-attacks-real-world-intrusion/))
 - Common drop locations: `C:\Windows\Temp\`, `C:\Windows\System32\drivers\`, or user-writable directories
 - Search for files matching any of the SHA256 hashes listed above
 
@@ -358,7 +358,7 @@ If you suspect this driver was used in your environment, check for these artifac
 
 This is not theoretical. Active ransomware groups use this driver in production attacks:
 
-- **Agonizing Serpens (Agrius)**: Iranian APT, used Rentdrv2 via custom loader `drvIX.exe` against Israeli higher education and tech sector targets since October 2023 [Source: Palo Alto Unit 42]
+- **Agonizing Serpens (Agrius)**: Iranian APT, used Rentdrv2 via custom loader `drvIX.exe` against Israeli higher education and tech sector targets since October 2023 ([Palo Alto Unit 42](https://unit42.paloaltonetworks.com/agonizing-serpens-targets-israeli-tech-higher-ed-sectors/))
 - **DragonForce ransomware**: Uses Rentdrv2.sys (BadRentdrv2) as one of two BYOVD backends. Config field `use_sys=2` selects rentdrv2.sys. [Source: S2W Medium](https://medium.com/s2wblog/detailed-analysis-of-dragonforce-ransomware-25d1a91a4509), [Acronis TRU](https://www.acronis.com/en/tru/posts/the-dragonforce-cartel-scattered-spider-at-the-gate/)
 
 ---
