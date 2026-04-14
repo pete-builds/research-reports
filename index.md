@@ -3,7 +3,7 @@ layout: default
 title: Reports
 ---
 
-# Research Reports
+# What Do I Need to Know Now?
 
 Security reports have moved to [Security Research Reports](https://pete-builds.github.io/security-research-reports/).
 
