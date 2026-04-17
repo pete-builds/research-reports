@@ -1,23 +1,67 @@
 ---
 title: "AI Evals for Applied Engineers: Testing Production AI Systems"
 date: 2026-04-12
-updated: 2026-04-12
+updated: 2026-04-14 4:36 PM ET
 status: complete
 canary: r-7f3a9c12
 summary: "AI evals are the systematic testing layer for non-deterministic AI systems. Unlike traditional unit tests, evals handle the reality that the same prompt can produce different outputs every time. This report covers the two leading open-source-friendly tools (promptfoo and Braintrust), practical eval patterns for engineers running LiteLLM and building agents, and how evals fit into an applied AI stack between workflow automation and chat interfaces."
 ---
 
-**TL;DR:** If you are shipping AI to production, you need evals. Traditional testing cannot handle non-deterministic outputs. The two standout tools are **promptfoo** (open-source CLI, runs locally, YAML-driven, recently acquired by OpenAI) and **Braintrust** (cloud-first platform with observability, stronger team collaboration). For a self-hosted homelab stack, promptfoo is the natural starting point: install via npm, point it at your LiteLLM proxy, define test cases in YAML, and run `promptfoo eval`. Braintrust is the step up when you need production tracing, team scoring, and CI/CD regression testing at scale.
+**TL;DR:** LLMs are non-deterministic, so traditional tests don't work. Use **promptfoo** (open-source CLI, YAML-driven, self-hostable) to compare models, catch prompt regressions, and red-team your AI. Point it at your LiteLLM proxy and run `promptfoo eval`. Step up to **Braintrust** when you need production tracing and team workflows.
 
-## Table of Contents
+## Executive Summary
+
+AI evals are systematic tests designed for non-deterministic systems. Unlike unit tests that check for exact outputs, evals score LLM responses across dimensions like correctness, relevance, safety, and format compliance.
+
+**Why this matters now:** Prompt changes, model swaps, and RAG pipeline updates can silently degrade quality. Without evals, the only detection method is user complaints. Evals close that gap by catching regressions before they ship.
+
+**The landscape in April 2026:**
+
+- **promptfoo** is the leading open-source eval CLI. Acquired by OpenAI in March 2026, it remains MIT-licensed. It runs locally, supports 60+ LLM providers (including native LiteLLM integration), and handles both quality evals and red-team security scanning. Best fit for self-hosted stacks.
+- **Braintrust** is the leading commercial platform. It combines evals with production observability: tracing, scoring, datasets, and alerts. Free tier is generous (1M spans/month). Best fit for teams shipping AI to external users.
+- **Langfuse** is the open-source alternative to Braintrust (21K GitHub stars, acquired by ClickHouse). Self-hostable but requires more infrastructure.
+- **DeepEval**, **Arize Phoenix**, and **LangSmith** serve narrower niches (pytest-style, notebook-first, and LangChain-coupled, respectively).
+
+**Recommended starting point:** Install promptfoo, point it at your LiteLLM proxy, write 5-10 test cases for a real prompt, and run your first eval. The Getting Started Checklist in Section 7 has a four-week plan.
+
+## Index
 
 1. [What Are Evals and Why They Matter](#1-what-are-evals-and-why-they-matter)
+   - The core problem evals solve
+   - Three gaps evals bridge (comprehension, specification, generalization)
 2. [promptfoo: The Open-Source CLI](#2-promptfoo-the-open-source-cli)
+   - How it works (YAML config, matrix testing)
+   - Key features table
+   - Self-hosting via Docker
+   - LiteLLM integration
+   - Installation options
 3. [Braintrust: The Observability Platform](#3-braintrust-the-observability-platform)
+   - How it works (SDK tracing, experiments)
+   - Key features table
+   - Pricing tiers
+   - Self-hosting (enterprise only)
+   - promptfoo vs. Braintrust comparison
 4. [Other Notable Tools](#4-other-notable-tools)
+   - Langfuse (open-source observability)
+   - LangSmith (LangChain ecosystem)
+   - Arize Phoenix (notebook-first)
+   - DeepEval (pytest-style)
+   - Quick comparison table
 5. [Practical Eval Patterns](#5-practical-eval-patterns)
+   - What to test: model comparison, prompt regression, RAG quality, agent behavior, red teaming
+   - Component vs. end-to-end evals
+   - LLM-as-judge best practices
+   - A/B testing prompts
 6. [How Evals Connect to the Stack](#6-how-evals-connect-to-the-stack)
+   - LiteLLM (model gateway)
+   - n8n (automated eval pipelines)
+   - Local vs. cloud model comparison
+   - Open WebUI (pre-flight checks)
 7. [Getting Started Checklist](#7-getting-started-checklist)
+   - Week 1: First eval
+   - Week 2: Model comparison
+   - Week 3: CI/CD integration
+   - Week 4: Expand coverage
 
 ---
 

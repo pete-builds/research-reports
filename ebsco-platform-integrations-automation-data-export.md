@@ -62,10 +62,30 @@ EBSCO provides a RESTful COUNTER_SUSHI API for automated harvesting of COUNTER R
 - Uses the NISO SUSHI protocol (Standardized Usage Statistics Harvesting Initiative)
 - Supports all standard COUNTER R5 report types (TR, DR, PR, IR)
 - SUSHI servers must respond within 120 seconds per the COUNTER specification
+- **Scope limitation:** This API only returns usage data for EBSCO-hosted content (EBSCOhost databases). It does not include consolidated multi-vendor usage data. For multi-vendor data, see Usage Consolidation below.
 
 [source: [connect.ebsco.com/s/article/EBSCOhost-SUSHI-Web-Service-FAQs](https://connect.ebsco.com/s/article/EBSCOhost-SUSHI-Web-Service-FAQs)]
 
 **Confidence: High.** All API details sourced directly from EBSCO's developer documentation and support articles.
+
+### Cost-per-use Controller API (Usage Consolidation)
+
+EBSCO exposes a Cost-per-use Controller API behind their API gateway (`apis.ebsco.com`) for programmatic access to Usage Consolidation data. This is the only known programmatic path for pulling consolidated multi-vendor usage data. Key details:
+
+- Authenticated via OAuth (`POST https://apis.ebsco.com/oauth-proxy/token`)
+- Requires three credentials: Usage Consolidation ID, Client ID, and API Key
+- Credentials obtained through EBSCO implementation consultant (not self-service)
+- Not publicly documented; designed for ERM system integration (primarily FOLIO)
+- FOLIO's eHoldings module (`mod-kb-ebsco`) uses this API via APIGEE proxy
+- **Open question:** Whether this API returns raw COUNTER report data or only cost-per-use metrics needs confirmation from EBSCO
+
+**Usage Consolidation as SUSHI client:** Usage Consolidation acts as a SUSHI client (IP: 192.73.31.84), harvesting COUNTER data FROM vendors on behalf of the institution. It does not act as a SUSHI server, so there is no SUSHI endpoint that serves consolidated data back out.
+
+[source: [connect.ebsco.com/s/article/EBSCO-Usage-Consolidation-FAQs](https://connect.ebsco.com/s/article/EBSCO-Usage-Consolidation-FAQs)]
+[source: [about.ebsco.com/products/ebsco-usage-consolidation](https://about.ebsco.com/products/ebsco-usage-consolidation)]
+[source: [folio-org.atlassian.net/wiki/spaces/FOLIJET/pages/1383240](https://folio-org.atlassian.net/wiki/spaces/FOLIJET/pages/1383240)]
+
+**Confidence: Medium.** API existence confirmed via FOLIO integration documentation. Capabilities and access requirements may differ for direct (non-FOLIO) use.
 
 ## 2. Data Export Formats
 
@@ -169,7 +189,7 @@ EBSCO uses different authentication mechanisms depending on the API:
 
 EBSCO offers several built-in analytics tools:
 
-- **EBSCO Usage Consolidation:** Centralized usage data from EBSCO and non-EBSCO vendors. Supports cost-per-use analysis, reports by title/publisher/platform/database. Can export data for external analysis. [source: [about.ebsco.com/products/ebsco-usage-consolidation](https://about.ebsco.com/products/ebsco-usage-consolidation)]
+- **EBSCO Usage Consolidation:** Centralized usage data from EBSCO and non-EBSCO vendors. Supports cost-per-use analysis, reports by title/publisher/platform/database. Can export data for external analysis. Usage Consolidation acts as a SUSHI client, harvesting from each vendor on the institution's behalf. Data can be exported manually via the UI, or accessed programmatically through the Cost-per-use Controller API (see APIs section above). [source: [about.ebsco.com/products/ebsco-usage-consolidation](https://about.ebsco.com/products/ebsco-usage-consolidation)]
 - **EBSCONET Analytics:** Dashboard with usage statistics for e-journals and e-packages ordered through EBSCO. [source: [about.ebsco.com/corporations/products/journal-subscription-services/usage-analytics-tools](https://about.ebsco.com/corporations/products/journal-subscription-services/usage-analytics-tools)]
 - **Panorama (FOLIO):** Reporting module within FOLIO covering acquisitions, circulation, inventory, and COUNTER usage data. [source: [about.ebsco.com/products/ebsco-folio-integrations](https://about.ebsco.com/products/ebsco-folio-integrations)]
 
@@ -317,7 +337,7 @@ For institutions using FOLIO, much of this is built in. Panorama provides native
 
 | Section | Confidence | Notes |
 |---------|-----------|-------|
-| Available APIs | High | Sourced directly from developer.ebsco.com |
+| Available APIs | High | Sourced directly from developer.ebsco.com. Cost-per-use Controller API confirmed via FOLIO docs. |
 | Data Export Formats | High | Confirmed across EBSCO docs and COUNTER spec |
 | Automation Options | High | SUSHI and EBSCOadmin scheduling well-documented |
 | Authentication Methods | High | Developer portal documentation |
@@ -333,6 +353,8 @@ For institutions using FOLIO, much of this is built in. Panorama provides native
 3. **EBSCONET Analytics API access.** It is unclear whether EBSCONET Analytics data can be accessed programmatically or only through the web dashboard.
 4. **Sandbox/testing environments.** Developer documentation references sandbox access but details on availability and limitations are gated behind the registration process.
 5. **COUNTER R5.1 support timeline.** EBSCO's adoption timeline for COUNTER R5.1 (which uses OpenAPI 3.1 for the SUSHI specification) is not publicly documented.
+6. **Cost-per-use Controller API data scope.** Does this API return raw COUNTER report data (usage counts by title/database/platform), or only pre-calculated cost-per-use metrics? This determines whether it can serve as the programmatic path for pulling consolidated multi-vendor usage data. Needs confirmation from EBSCO rep.
+7. **Cost-per-use Controller API access without FOLIO.** Can institutions get direct API credentials independent of FOLIO's eHoldings module? Access is currently documented only through the FOLIO integration path.
 
 ## Sources
 
@@ -357,6 +379,9 @@ For institutions using FOLIO, much of this is built in. Panorama provides native
 19. EBSCO Press Release, "EBSCO Develops Free Tool to Assist Librarians with COUNTER R5" - [about.ebsco.com/news-center/press-releases/ebsco-develops-free-tool-assist-librarians-counter-r5](https://about.ebsco.com/news-center/press-releases/ebsco-develops-free-tool-assist-librarians-counter-r5)
 20. Library Technology Guides, "Chalmers University of Technology goes live with FOLIO" - [librarytechnology.org/pr/24658](https://librarytechnology.org/pr/24658)
 21. NISO KBART Registry - [sites.google.com/niso.org/kbart-registry](https://sites.google.com/niso.org/kbart-registry)
+22. EBSCO Connect, "EBSCO Usage Consolidation FAQs" - [connect.ebsco.com/s/article/EBSCO-Usage-Consolidation-FAQs](https://connect.ebsco.com/s/article/EBSCO-Usage-Consolidation-FAQs)
+23. FOLIO Wiki, "Usage Consolidation Design" - [folio-org.atlassian.net/wiki/spaces/FOLIJET/pages/1383240](https://folio-org.atlassian.net/wiki/spaces/FOLIJET/pages/1383240)
+24. FOLIO Documentation, "eHoldings Settings" - [docs.folio.org/docs/settings/settings_eholdings/settings_eholdings/](https://docs.folio.org/docs/settings/settings_eholdings/settings_eholdings/)
 22. EBSCOhost Integration Toolkit Support Center - [support.ebsco.com/eit/api.php](https://support.ebsco.com/eit/api.php)
 
 ## Update History
