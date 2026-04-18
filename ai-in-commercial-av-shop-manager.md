@@ -1,9 +1,29 @@
 ---
 title: "AI in Commercial AV: What a Shop Manager Can Actually Use"
 date: 2026-04-18
-updated: 2026-04-18 09:12 EDT
+updated: 2026-04-18 09:17 EDT
 summary: "Cloning the last project is industry consensus in commercial AV, not a weakness. AI sits on top of that discipline for paperwork, first-draft documentation, and internal tools. It is not trusted for technical product specs, signal flow, or CAD, and integrators who have tried it agree."
 ---
+
+## TL;DR
+
+The friend is right. "Clone the last project" is the dominant design methodology across the commercial AV industry in 2026 and every major integrator quoted in the trade press says some version of the same thing. AI does not replace that instinct. It sits on top of it to speed up paperwork, first-draft proposals, submittals, and internal tooling. The single highest-ROI move for a Shop Manager is to use Claude Code once to build small deterministic tools (CSV to submittal PDF, CSV to commissioning checklist) that run on every job afterward without calling an LLM at runtime.
+
+## Executive Summary
+
+**Industry position (mid-2026):** The commercial AV industry has moved past AI hype and settled into cautious, task-specific adoption. The 2025 CE Pro Business Software survey shows 33% of integrators use AI regularly and 63% have moved beyond experimentation, but the consistent framing from practitioners is "AI is an assistant, not an authority" (Keith Neubert, AV Network 2025 Top Integrators roundtable).
+
+**What works for a Shop Manager:** Paperwork and drafting. First-draft scope-of-work prose, submittal packages built from a BOM, commissioning checklists, RFP and bid comparison tables, Q-SYS Lua boilerplate, and inventory pull lists. All of these share a pattern: AI produces a first draft, a human with domain knowledge corrects it, and the output is a document, not a live system.
+
+**What does not work:** Technical product specs, firmware compatibility, signal flow deliverables, CAD for GC submission, programming for safety-critical or life-safety systems, and commissioning judgment. Integrators consistently report hallucinated part numbers, confused product generations (MXA920 vs MXA902), and confident-but-wrong compatibility claims.
+
+**Why "clone the last project" is the correct instinct:** Known-good BOMs mean known-good lead times, margin, and service calls. The commissioning checklist from the last job beats a clean sheet. Training the install team on a repeatable room type reduces callbacks. Every major integrator interviewed in the 2025 trade press describes some version of "we have a library of proven room types." AI speeds up the documentation around the cloned system. The system itself stays cloned.
+
+**Tool landscape that actually ships in 2026:** Manufacturer-embedded AI is production-grade (Shure MXA920/902, Biamp Parlé, Q-SYS VisionSuite, Crestron AutoMeasure, Logitech Rally Bar, Poly Studio E70). Front-office design automation (XTEN-AV, D-Tools Cloud AI, ProjX360 AI Assistant launched April 7, 2026) is real but unevenly adopted. Q-SYS Lua generation via Val AI is the narrow, credible specialist tool. Generative AI (Claude, ChatGPT, Copilot) handles proposals and meeting notes.
+
+**The highest-ROI pattern for a shop:** Use a coding assistant to build internal tools that run deterministically without an LLM at runtime. Write it once, use it on every job. Recommended starter project: CSV from D-Tools to cutsheet submittal PDF. Two to four hours to build with Claude Code, saves hours per project forever, no hallucination risk in the field deliverable because the LLM is not in the runtime loop.
+
+**Liability rule integrators are converging on:** AI drafts, a human signs. The signature is the liability transfer point. Every back-office AI workflow needs a human review step before the document leaves the shop.
 
 ## Current Status
 
@@ -11,6 +31,7 @@ Active research. The commercial AV industry moved past AI hype in 2024 and is no
 
 ## Table of Contents
 
+0. TL;DR and Executive Summary (above)
 1. The Industry Consensus (Mid-2026)
 2. Where AI Works for a Shop Manager
 3. Where AI Doesn't Work (Yet)
@@ -164,6 +185,7 @@ The practical rule integrators are converging on in trade press commentary: AI d
 
 ## Update History
 
+- 2026-04-18 09:17 EDT: Added TL;DR and Executive Summary to the top of the report for faster scanability.
 - 2026-04-18 09:12 EDT: Initial report created.
 
 ## How This Report Was Generated
