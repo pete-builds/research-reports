@@ -5,6 +5,8 @@ updated: 2026-04-18 10:10 EDT
 summary: "Evidence-based survey of AI trends in commercial AV for Shop Managers as of April 2026. Covers adoption data, how AI is being used in integrator shops, specific workflows that fit, specific workflows that don't, the 2026 tool landscape, and the internal-tools pattern that produces the most leverage."
 ---
 
+# AI in Commercial AV: Trends and Workflows for Shop Managers
+
 ## TL;DR
 
 Commercial AV is past the experimentation stage on AI: 63% of integrators report regular or occasional use as of the 2025 CE Pro Business Software survey. The dominant pattern is back-office automation (proposals, submittals, commissioning checklists, meeting notes, scope-of-work drafting), with citations in trade-press coverage. Manufacturer-embedded AI ships in production across cameras, microphones, and DSP. Integrators publicly flag technical product specs, signal flow design, CAD for submission, and safety-critical programming as workflows where AI still produces confident errors. The highest-leverage pattern for Shop Managers in 2026 is using coding assistants (Claude Code, Cursor, Copilot) to build small deterministic internal tools that turn a BOM into submittals, checklists, or pull lists without calling an LLM at runtime.
