@@ -16,11 +16,6 @@ Commercial AV is past the experimentation stage on AI: 63% of integrators report
 - [TL;DR](#tldr)
 - [Table of Contents](#table-of-contents)
 - [Executive Summary](#executive-summary)
-- [Context From the Shop](#context-from-the-shop)
-  - [D-Tools Licensing: SI vs Cloud](#d-tools-licensing-si-vs-cloud)
-  - [Crestron Toolchain for Hardware-Spec Roles](#crestron-toolchain-for-hardware-spec-roles)
-  - [Clone Rate and ROI Framing](#clone-rate-and-roi-framing)
-  - [Python Appetite: A Graduated Path](#python-appetite-a-graduated-path)
 - [Current Status](#current-status)
 - [Findings](#findings)
   - [1. AI Trends in Commercial AV (2026)](#1-ai-trends-in-commercial-av-2026)
@@ -30,6 +25,11 @@ Commercial AV is past the experimentation stage on AI: 63% of integrators report
   - [5. The Coding Assistant / Internal Tools Pattern](#5-the-coding-assistant--internal-tools-pattern)
   - [6. Starter Workflows for a Shop Manager](#6-starter-workflows-for-a-shop-manager)
   - [6b. A Concrete Build Path: Smartsheet-to-Submittal](#6b-a-concrete-build-path-smartsheet-to-submittal)
+  - [6c. Context From This Shop](#6c-context-from-this-shop)
+    - [D-Tools Licensing: SI vs Cloud](#d-tools-licensing-si-vs-cloud)
+    - [Crestron Toolchain for Hardware-Spec Roles](#crestron-toolchain-for-hardware-spec-roles)
+    - [Clone Rate and ROI Framing](#clone-rate-and-roi-framing)
+    - [Python Appetite: A Graduated Path](#python-appetite-a-graduated-path)
   - [7. Risk and Liability](#7-risk-and-liability)
 - [Confidence Assessment](#confidence-assessment)
 - [Open Questions](#open-questions)
@@ -52,77 +52,6 @@ Commercial AV is past the experimentation stage on AI: 63% of integrators report
 **The highest-leverage pattern.** Coding assistants writing small deterministic internal tools. The LLM writes the tool once; the tool runs on every project afterward without calling an LLM at runtime. Build times measured in hours, time savings measured per project forever, and no hallucination risk in the deliverable because the runtime is pure Python or equivalent.
 
 **Liability rule integrators are converging on.** AI drafts, a human signs. Every back-office AI workflow needs a human review step before the document leaves the shop.
-
-## Context From the Shop
-
-Four scoping answers from the Shop Manager this report is written for. Each answer is followed by the tool-selection and workflow recommendations it should drive.
-
-### D-Tools Licensing: SI vs Cloud
-
-**Shop's answer:** No D-Tools license today. Used to run D-Tools Cloud. Has heard D-Tools SI (on-prem) is more useful.
-
-D-Tools' own side-by-side comparison positions the two products on different axes: Cloud is a "modern SaaS platform" aimed at "small to mid-size teams" that want "fast setup and easy onboarding"; SI is an "enterprise desktop + server platform" aimed at "mid-size to enterprise organizations" managing "highly complex AV, security, and building technology systems" with "advanced engineering drawings and documentation." D-Tools explicitly describes a growth path: "Many integration companies begin with D-Tools Cloud as they build operational structure and scale their business. As project complexity grows and engineering documentation becomes more advanced, some firms transition to D-Tools System Integrator." [source: https://www.d-tools.com/resource-center/operations-management/si-d-tools-cloud-vs-si-comparison]
-
-The integrator-heard view that "SI on-prem is more useful" maps to two concrete SI-only features that Cloud does not match in April 2026: native AutoCAD and Visio integration with synchronized BOMs, and the SI v24 offline mobile install app for field work without internet. Cloud is iterating fast (AI-generated scopes of work, Interconnect Diagrams, and a native mobile app are all Cloud-side in 2026), but the engineering documentation depth remains SI's differentiator. [source: https://www.d-tools.com/system-integrator-features, https://www.cepro.com/news/d-tools-previews-si-v24-ahead-of-ise-2026/624701/, https://www.avnetwork.com/business/expert-opinions/roadmap-2026-d-tools]
-
-SI pricing is $1,800 per user annually with a 5-user minimum ($9,000 entry) and is positioned for projects above $75K. D-Tools Hosted is a middle path: the SI server running on AWS, managed by D-Tools, no VPN required, full SI feature set preserved. For a shop with existing Smartsheet-based workflows that wants to evaluate SI without an on-prem server install, Hosted is the shortest runway. [source: https://www.d-tools.com/system-integrator-pricing, https://www.d-tools.com/resource-center/industry-insights/d-tools-why-choose-hosted]
-
-**Switching-cost note.** The cost side of the SI question is rarely just the license. It's the data migration from whatever the shop currently uses (Smartsheet, Excel, Jetbuilt) into the SI catalog, the Visio/AutoCAD template rebuild, and the learning-curve hit for the people who actually use it. For a shop running 3-5 standardized room types, the catalog build is a one-time project that pays back fast; for a one-off-heavy shop, SI's overhead will outweigh its payoff. The room-type clone rate is the leading indicator for SI ROI. (See the Clone Rate section below.)
-
-### Crestron Toolchain for Hardware-Spec Roles
-
-**Shop's answer:** Crestron shop. Specs the hardware, does not do Crestron programming, code, or UI.
-
-Most Crestron "AI" coverage in the trade press is aimed at programmers (SIMPL#, SIMPL Windows, Crestron Home/Pyng macros, custom modules) or at residential dealers (Configure Pro, the Crestron Home configuration workflow). For a commercial hardware-spec-only role, those tools are not the daily drivers. The tools that matter are the dealer configurators, the product-availability portal, and the spec-sheet library. All are accessible through the Crestron Support Tools page with a dealer account; none of them require writing code. [source: https://www.crestron.com/support/tools]
-
-The daily-use set for a commercial hardware specifier:
-
-- **Pro Portal.** Dealer ordering and real-time product availability. The "is this in stock this week" tool that determines whether a BOM is buildable on the project timeline. Essential for quoting against realistic lead times.
-- **Collab Room Builder.** The configurator for Collab Compute meeting-room packages. Designed around room-size presets (huddle through large conference) and produces a consistent BOM of compute, camera, audio, and accessories. For a shop that wants to standardize on a handful of room archetypes, this is the built-in templating tool. The tool is explicitly scoped to Collab Compute; comprehensive, custom systems still need a full integrator design. [source: https://www.crestron.com/Support/Tools/Configurators/Collab-Room-Builder]
-- **DM Essentials Configurator.** Hardware selector for HDMI signal extension: the DMPS Lite switchers (HD-PS401/402/621/622), the HD-TX/HD-TXU 4K transmitters, and matched HD-RX/HD-RXU 4K receivers. Produces a compatible set of parts filtered against a distance/signal requirement. Hardware-spec-oriented with no programming needed. [source: https://www.crestron.com/Support/Tools/Configurators/DM-Essentials-Configurator]
-- **Spec Sheet Collection.** Central library of Crestron product spec sheets. This is the source material any Smartsheet-to-cutsheet pipeline needs to link into. No automation hooks; a spec sheet download is still a manual action per part number. [source: https://www.crestron.com/support/tools]
-- **Consultant Calculator and Cresnet Power Calculator.** Quote-side sanity checks. The Cresnet calculator verifies the power budget before a room design gets shipped to a field tech who then discovers it mid-install.
-- **Intelligent Video Room Designer** and **FlipTop Configuration Tool.** Adjacent configurators useful for specific room types.
-
-XiO Cloud is the post-install fleet monitor. It is not a spec or BOM tool, but it is worth knowing that: the free tier covers Crestron-device monitoring and firmware management; Premium adds third-party device support (via Crestron Connected Partners, SNMP/TCP/Ping, or the XiO Cloud Gateway for custom drivers), historical reporting, ServiceNow ticket integration, and API access. Devices can be "pre-configured" so they auto-provision when they hit the network, which tightens the install-to-monitoring handoff. Relevant to the Shop Manager as a post-award output, not as a BOM-generation tool. [source: https://www.crestron.com/Products/Featured-Solutions/XiO-Cloud, https://www.crestron.com/Products/Catalog/Control-and-Management/Cloud-Management/Licenses/SW-XIOC-PREMIUM-1YR-1-99]
-
-Tools that a hardware-spec role can skip: Configure Pro (pitched as "next-generation configuration platform designed to streamline and simplify the setup of Crestron Home systems" at CEDIA Expo 2025: residential Crestron Home focus, not commercial conference rooms), D3 Pro / Toolbox (legacy programming tools), and the SIMPL / Crestron Studio programming suite. These are not Shop Manager workflows. [source: https://www.crestron.com/News/Blog/September-2025/Configure-Pro-Evolution-Smart-Home-Configuration, https://www.strata-gee.com/new-crestron-configure-pro-brings-new-power-approachability-efficiency-to-system-setup/]
-
-AutoMeasure is the one Crestron AI feature that touches a hardware-spec role indirectly: at commissioning, it uses computer vision and ArUco markers to detect camera and microphone position, reducing setup time. The Shop Manager sees this as a line-item reduction in installation labor hours for rooms using Automate VX 6.5, not as a BOM-generation tool. Announced at ISE 2026. [source: https://www.crestron.com/News/Blog/February-2026/Crestron-at-the-ISE-2026-Expo-A-Recap]
-
-### Clone Rate and ROI Framing
-
-**Shop's answer:** Tries to limit one-offs. Has a few different system types that get repeated.
-
-This maps directly to the room-type pattern captured in an institutional AV submittal reference (85 pages, April 2025, anonymized): one base room (123) becomes the template, variants like 221 (same as 123 + codec) are delta overrides, and combinable rooms like 321/323 are doubled quantities. When most projects fit one of 3-5 archetypes, the ROI math for internal tooling changes sharply in favor of building. [source: anonymized institutional AV submittal reference, April 2025]
-
-**ROI framing worked example.** A shop running 20 projects per year where 80% match one of 4 archetypes has 16 clone projects and 4 one-offs annually. If each clone project takes 3 hours of submittal-assembly time manually and a templated pipeline reduces that to 30 minutes:
-
-- Current annual time on clones: 16 projects x 3 hrs = 48 hrs/year
-- Pipeline-assisted time on clones: 16 projects x 0.5 hrs = 8 hrs/year
-- Annual savings: 40 hours on clones alone
-- One-time build cost (Claude Code assisted Python pipeline against 4 templates): 15-25 hours
-- Break-even: before the end of year 1, with savings compounding every year after
-
-The break-even shifts badly for shops with a lower clone rate: a shop where only 30% of projects match an archetype would take two to three years to break even on the same pipeline investment. The Shop Manager's stated preference for limiting one-offs is the exact precondition that makes an internal-tooling build worthwhile.
-
-**Templating pattern that matches institutional submittals.** The institutional reference documents a "Same as [room]" pattern: base room gets a full BOM, variants get a one-line reference plus delta bullets. This is the pattern any internal pipeline should respect: one source-of-truth template per archetype, variants expressed as diffs against the base. It keeps the template count low (one per archetype, not one per project) and makes the output reviewable by reading the deltas.
-
-### Python Appetite: A Graduated Path
-
-**Shop's answer:** Exports a Smartsheet (Seth built the filter to clean it up) and adds it to the 1-page summary. Already in spreadsheet-land.
-
-Seth's filter is already the first automation step. The Shop Manager is not starting from zero; a teammate already normalizes the messy Smartsheet export into a clean dataset. That's half the problem. The remaining gap is the transformation from "clean rows" to "formatted 1-page summary" and eventually to "full submittal package with cutsheets."
-
-The recommendation: don't jump to Python yet. Climb the ladder one rung at a time, only moving up when the current rung stops scaling.
-
-**Step 1: Word or Markdown template with merge fields.** Build the 1-page summary as a template with named fields. Smartsheet's native document-generation feature can drive this, though it requires a Business- or Enterprise-tier plan and at least one team member with a DocuSign license; the template needs to be a fillable PDF or a DocuSign mapping. Time investment: 1-3 hours. If the shop doesn't have DocuSign, the same template pattern works with Word mail merge against a CSV export. [source: https://help.smartsheet.com/articles/2482492-build-workflow-automate-document-generation, https://apidog.com/blog/smartsheet-api-guide/]
-
-**Step 2: Add an "AI category" column to Smartsheet.** Group line items by subsystem category (Audio, Projection, Display, Switching, Control, Network, Camera, Conferencing, Rack, Lectern, Cable, Misc, matching the 14 categories in the institutional reference). Seth's filter becomes a filter-plus-sort; the 1-page summary renders category-grouped bullets instead of a flat list. No code, immediate clarity improvement, and the grouping is the exact structure downstream automation will need. [source: anonymized institutional AV submittal reference, April 2025]
-
-**Step 3: Python script that reads the cleaned CSV and emits a formatted document.** Only if volume and template complexity justify it. The Smartsheet Python SDK (`smartsheet-python-sdk` v3.8.0 as of April 17, 2026) can pull the cleaned sheet directly via API (Business or Enterprise plan required), or the script can take the CSV export Seth already produces. Output options: `python-docx` for a Word template with merge fields, `ReportLab` or `WeasyPrint` for direct PDF generation, or a hybrid (Word template rendered, then exported to PDF). A full cutsheet-concatenation step adds another hour but is where the ROI accelerates for Crestron-specific submittals linking to the Spec Sheet Collection. [source: https://github.com/smartsheet/smartsheet-python-sdk, https://pypi.org/project/smartsheet-python-sdk/]
-
-**Why this order is correct for a spreadsheet-comfortable shop.** Each step produces a working output. If step 1 is enough, the project stops there. If step 2 makes the output good enough for every archetype, the project stops there. Step 3 only gets built when the template complexity (cutsheets, legal block, per-room sub-sections) outgrows what a merge-field template can express. This is the opposite of "let's build a Python pipeline and figure out what it should do later" -- that path burns weeks and produces brittle code. Climb rungs.
 
 ## Current Status
 
@@ -270,7 +199,7 @@ Official Smartsheet Python SDK (`smartsheet-python-sdk`, version 3.8.0 as of Apr
 
 - **Time to build:** 4 to 8 hours with Claude Code for the first version. After that, each new report variation is minutes.
 - **Skill prerequisites:** Someone needs to run the script. That can be the Shop Manager (if comfortable running `python generate-submittal.py`), an IT-adjacent teammate, or whoever already builds the Smartsheet filters. Python literacy is not required to *use* it. It is required to *adapt* it.
-- **Where it breaks:** Requires Smartsheet API access, which is included on the Business ($25/user/month, 3-user minimum) and Enterprise (custom pricing) plans but not on Pro or free tiers. Alternative path: skip the API, have Seth's filter export a CSV, and point the Python script at the file. Same output, no API gate. [source: https://apidog.com/blog/smartsheet-api-guide/]
+- **Where it breaks:** Requires Smartsheet API access, which is included on the Business ($25/user/month, 3-user minimum) and Enterprise (custom pricing) plans but not on Pro or free tiers. Alternative path: skip the API, have the AV Installation Project Manager's filter export a CSV, and point the Python script at the file. Same output, no API gate. [source: https://apidog.com/blog/smartsheet-api-guide/]
 - **What it produces:** A fully styled PDF with the shop's exact template, concatenated cutsheets in BOM order, signature block, legal terms, logo placement, and whatever else the shop's estimate submittal currently contains. Also produces a predictable, diffable, version-controllable tool that does not break when Smartsheet's UI changes.
 
 **Option C: Smartsheet to Google Sheets to Apps Script. Middle ground.**
@@ -312,6 +241,77 @@ Items flagged TRUE in the Discount column are owner-furnished (reused or custome
 **What the submittal body does NOT contain.** No scope-of-work narrative, no assumptions section, no exclusions section, no legal terms or signature block. Those live outside the submittal body (in a cover letter, SOW, or master agreement). Any Smartsheet-to-submittal pipeline for this format should skip trying to generate scope prose inside the submittal; that content belongs in a separate document.
 
 **Network switch config tables** appear in the signal flow section with columns: Port, Device, UID, Location, VLAN, PoE wattage. These are templatable in structure but room-specific in content. A separate provisioning template feeds these.
+
+### 6c. Context From This Shop
+
+Four scoping answers from the Shop Manager this report is written for. Each answer is followed by the tool-selection and workflow recommendations it should drive.
+
+#### D-Tools Licensing: SI vs Cloud
+
+**Shop's answer:** No D-Tools license today. Used to run D-Tools Cloud. Has heard D-Tools SI (on-prem) is more useful.
+
+D-Tools' own side-by-side comparison positions the two products on different axes: Cloud is a "modern SaaS platform" aimed at "small to mid-size teams" that want "fast setup and easy onboarding"; SI is an "enterprise desktop + server platform" aimed at "mid-size to enterprise organizations" managing "highly complex AV, security, and building technology systems" with "advanced engineering drawings and documentation." D-Tools explicitly describes a growth path: "Many integration companies begin with D-Tools Cloud as they build operational structure and scale their business. As project complexity grows and engineering documentation becomes more advanced, some firms transition to D-Tools System Integrator." [source: https://www.d-tools.com/resource-center/operations-management/si-d-tools-cloud-vs-si-comparison]
+
+The integrator-heard view that "SI on-prem is more useful" maps to two concrete SI-only features that Cloud does not match in April 2026: native AutoCAD and Visio integration with synchronized BOMs, and the SI v24 offline mobile install app for field work without internet. Cloud is iterating fast (AI-generated scopes of work, Interconnect Diagrams, and a native mobile app are all Cloud-side in 2026), but the engineering documentation depth remains SI's differentiator. [source: https://www.d-tools.com/system-integrator-features, https://www.cepro.com/news/d-tools-previews-si-v24-ahead-of-ise-2026/624701/, https://www.avnetwork.com/business/expert-opinions/roadmap-2026-d-tools]
+
+SI pricing is $1,800 per user annually with a 5-user minimum ($9,000 entry) and is positioned for projects above $75K. D-Tools Hosted is a middle path: the SI server running on AWS, managed by D-Tools, no VPN required, full SI feature set preserved. For a shop with existing Smartsheet-based workflows that wants to evaluate SI without an on-prem server install, Hosted is the shortest runway. [source: https://www.d-tools.com/system-integrator-pricing, https://www.d-tools.com/resource-center/industry-insights/d-tools-why-choose-hosted]
+
+**Switching-cost note.** The cost side of the SI question is rarely just the license. It's the data migration from whatever the shop currently uses (Smartsheet, Excel, Jetbuilt) into the SI catalog, the Visio/AutoCAD template rebuild, and the learning-curve hit for the people who actually use it. For a shop running 3-5 standardized room types, the catalog build is a one-time project that pays back fast; for a one-off-heavy shop, SI's overhead will outweigh its payoff. The room-type clone rate is the leading indicator for SI ROI. (See the Clone Rate section below.)
+
+#### Crestron Toolchain for Hardware-Spec Roles
+
+**Shop's answer:** Crestron shop. Specs the hardware, does not do Crestron programming, code, or UI.
+
+Most Crestron "AI" coverage in the trade press is aimed at programmers (SIMPL#, SIMPL Windows, Crestron Home/Pyng macros, custom modules) or at residential dealers (Configure Pro, the Crestron Home configuration workflow). For a commercial hardware-spec-only role, those tools are not the daily drivers. The tools that matter are the dealer configurators, the product-availability portal, and the spec-sheet library. All are accessible through the Crestron Support Tools page with a dealer account; none of them require writing code. [source: https://www.crestron.com/support/tools]
+
+The daily-use set for a commercial hardware specifier:
+
+- **Pro Portal.** Dealer ordering and real-time product availability. The "is this in stock this week" tool that determines whether a BOM is buildable on the project timeline. Essential for quoting against realistic lead times.
+- **Collab Room Builder.** The configurator for Collab Compute meeting-room packages. Designed around room-size presets (huddle through large conference) and produces a consistent BOM of compute, camera, audio, and accessories. For a shop that wants to standardize on a handful of room archetypes, this is the built-in templating tool. The tool is explicitly scoped to Collab Compute; comprehensive, custom systems still need a full integrator design. [source: https://www.crestron.com/Support/Tools/Configurators/Collab-Room-Builder]
+- **DM Essentials Configurator.** Hardware selector for HDMI signal extension: the DMPS Lite switchers (HD-PS401/402/621/622), the HD-TX/HD-TXU 4K transmitters, and matched HD-RX/HD-RXU 4K receivers. Produces a compatible set of parts filtered against a distance/signal requirement. Hardware-spec-oriented with no programming needed. [source: https://www.crestron.com/Support/Tools/Configurators/DM-Essentials-Configurator]
+- **Spec Sheet Collection.** Central library of Crestron product spec sheets. This is the source material any Smartsheet-to-cutsheet pipeline needs to link into. No automation hooks; a spec sheet download is still a manual action per part number. [source: https://www.crestron.com/support/tools]
+- **Consultant Calculator and Cresnet Power Calculator.** Quote-side sanity checks. The Cresnet calculator verifies the power budget before a room design gets shipped to a field tech who then discovers it mid-install.
+- **Intelligent Video Room Designer** and **FlipTop Configuration Tool.** Adjacent configurators useful for specific room types.
+
+XiO Cloud is the post-install fleet monitor. It is not a spec or BOM tool, but it is worth knowing that: the free tier covers Crestron-device monitoring and firmware management; Premium adds third-party device support (via Crestron Connected Partners, SNMP/TCP/Ping, or the XiO Cloud Gateway for custom drivers), historical reporting, ServiceNow ticket integration, and API access. Devices can be "pre-configured" so they auto-provision when they hit the network, which tightens the install-to-monitoring handoff. Relevant to the Shop Manager as a post-award output, not as a BOM-generation tool. [source: https://www.crestron.com/Products/Featured-Solutions/XiO-Cloud, https://www.crestron.com/Products/Catalog/Control-and-Management/Cloud-Management/Licenses/SW-XIOC-PREMIUM-1YR-1-99]
+
+Tools that a hardware-spec role can skip: Configure Pro (pitched as "next-generation configuration platform designed to streamline and simplify the setup of Crestron Home systems" at CEDIA Expo 2025: residential Crestron Home focus, not commercial conference rooms), D3 Pro / Toolbox (legacy programming tools), and the SIMPL / Crestron Studio programming suite. These are not Shop Manager workflows. [source: https://www.crestron.com/News/Blog/September-2025/Configure-Pro-Evolution-Smart-Home-Configuration, https://www.strata-gee.com/new-crestron-configure-pro-brings-new-power-approachability-efficiency-to-system-setup/]
+
+AutoMeasure is the one Crestron AI feature that touches a hardware-spec role indirectly: at commissioning, it uses computer vision and ArUco markers to detect camera and microphone position, reducing setup time. The Shop Manager sees this as a line-item reduction in installation labor hours for rooms using Automate VX 6.5, not as a BOM-generation tool. Announced at ISE 2026. [source: https://www.crestron.com/News/Blog/February-2026/Crestron-at-the-ISE-2026-Expo-A-Recap]
+
+#### Clone Rate and ROI Framing
+
+**Shop's answer:** Tries to limit one-offs. Has a few different system types that get repeated.
+
+This maps directly to the room-type pattern captured in an institutional AV submittal reference (85 pages, April 2025, anonymized): one base room (123) becomes the template, variants like 221 (same as 123 + codec) are delta overrides, and combinable rooms like 321/323 are doubled quantities. When most projects fit one of 3-5 archetypes, the ROI math for internal tooling changes sharply in favor of building. [source: anonymized institutional AV submittal reference, April 2025]
+
+**ROI framing worked example.** A shop running 20 projects per year where 80% match one of 4 archetypes has 16 clone projects and 4 one-offs annually. If each clone project takes 3 hours of submittal-assembly time manually and a templated pipeline reduces that to 30 minutes:
+
+- Current annual time on clones: 16 projects x 3 hrs = 48 hrs/year
+- Pipeline-assisted time on clones: 16 projects x 0.5 hrs = 8 hrs/year
+- Annual savings: 40 hours on clones alone
+- One-time build cost (Claude Code assisted Python pipeline against 4 templates): 15-25 hours
+- Break-even: before the end of year 1, with savings compounding every year after
+
+The break-even shifts badly for shops with a lower clone rate: a shop where only 30% of projects match an archetype would take two to three years to break even on the same pipeline investment. The Shop Manager's stated preference for limiting one-offs is the exact precondition that makes an internal-tooling build worthwhile.
+
+**Templating pattern that matches institutional submittals.** The institutional reference documents a "Same as [room]" pattern: base room gets a full BOM, variants get a one-line reference plus delta bullets. This is the pattern any internal pipeline should respect: one source-of-truth template per archetype, variants expressed as diffs against the base. It keeps the template count low (one per archetype, not one per project) and makes the output reviewable by reading the deltas.
+
+#### Python Appetite: A Graduated Path
+
+**Shop's answer:** Exports a Smartsheet (an AV Installation Project Manager on the team built the filter to clean it up) and adds it to the 1-page summary. Already in spreadsheet-land.
+
+The AV Installation Project Manager's filter is already the first automation step. The Shop Manager is not starting from zero; a colleague already normalizes the messy Smartsheet export into a clean dataset. That's half the problem. The remaining gap is the transformation from "clean rows" to "formatted 1-page summary" and eventually to "full submittal package with cutsheets."
+
+The recommendation: don't jump to Python yet. Climb the ladder one rung at a time, only moving up when the current rung stops scaling.
+
+**Step 1: Word or Markdown template with merge fields.** Build the 1-page summary as a template with named fields. Smartsheet's native document-generation feature can drive this, though it requires a Business- or Enterprise-tier plan and at least one team member with a DocuSign license; the template needs to be a fillable PDF or a DocuSign mapping. Time investment: 1-3 hours. If the shop doesn't have DocuSign, the same template pattern works with Word mail merge against a CSV export. [source: https://help.smartsheet.com/articles/2482492-build-workflow-automate-document-generation, https://apidog.com/blog/smartsheet-api-guide/]
+
+**Step 2: Add an "AI category" column to Smartsheet.** Group line items by subsystem category (Audio, Projection, Display, Switching, Control, Network, Camera, Conferencing, Rack, Lectern, Cable, Misc, matching the 14 categories in the institutional reference). The AV Installation Project Manager's filter becomes a filter-plus-sort; the 1-page summary renders category-grouped bullets instead of a flat list. No code, immediate clarity improvement, and the grouping is the exact structure downstream automation will need. [source: anonymized institutional AV submittal reference, April 2025]
+
+**Step 3: Python script that reads the cleaned CSV and emits a formatted document.** Only if volume and template complexity justify it. The Smartsheet Python SDK (`smartsheet-python-sdk` v3.8.0 as of April 17, 2026) can pull the cleaned sheet directly via API (Business or Enterprise plan required), or the script can take the CSV export the AV Installation Project Manager already produces. Output options: `python-docx` for a Word template with merge fields, `ReportLab` or `WeasyPrint` for direct PDF generation, or a hybrid (Word template rendered, then exported to PDF). A full cutsheet-concatenation step adds another hour but is where the ROI accelerates for Crestron-specific submittals linking to the Spec Sheet Collection. [source: https://github.com/smartsheet/smartsheet-python-sdk, https://pypi.org/project/smartsheet-python-sdk/]
+
+**Why this order is correct for a spreadsheet-comfortable shop.** Each step produces a working output. If step 1 is enough, the project stops there. If step 2 makes the output good enough for every archetype, the project stops there. Step 3 only gets built when the template complexity (cutsheets, legal block, per-room sub-sections) outgrows what a merge-field template can express. This is the opposite of "let's build a Python pipeline and figure out what it should do later" -- that path burns weeks and produces brittle code. Climb rungs.
 
 ### 7. Risk and Liability
 
