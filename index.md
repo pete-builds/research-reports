@@ -9,6 +9,7 @@ Security reports have moved to [Security Research Reports](https://pete-builds.g
 
 | Report | Date |
 |--------|------|
+| [California Prop 65 Warning Labels: A Consumer Decision Guide](prop-65-warning-label-decision-guide) | 2026-04 |
 | [Claude Code Sysadmin Guide](claude-code-sysadmin-guide) | 2026-03 |
 | [Claude Code PC Setup](claude-code-pc-setup) | 2026-03 |
 | [Claude Code Buddy Feature](claude-code-buddy-feature) | 2026-03 |
