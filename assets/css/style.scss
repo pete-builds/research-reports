@@ -1,0 +1,66 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+/* Widen content area for wide tables */
+.inner {
+  max-width: 1280px;
+  width: 92%;
+}
+
+/* Compact, readable tables */
+table {
+  display: table;
+  width: 100%;
+  font-size: 0.82em;
+  table-layout: auto;
+  border-collapse: collapse;
+  margin: 1em 0 1.5em 0;
+}
+
+th, td {
+  padding: 0.45em 0.6em;
+  vertical-align: top;
+  text-align: left;
+  line-height: 1.35;
+  border: 1px solid #444;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+th {
+  background: #2a2a2a;
+  font-weight: 600;
+}
+
+td code {
+  font-size: 0.95em;
+  word-break: break-word;
+}
+
+/* Make wide tables horizontally scrollable on smaller screens as a fallback */
+@media (max-width: 900px) {
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  th, td {
+    white-space: normal;
+  }
+}
+
+/* Tighten H1 article title */
+.inner > h1:first-child {
+  margin-top: 0.5em;
+  font-size: 2em;
+  border-bottom: 1px solid #555;
+  padding-bottom: 0.3em;
+}
+
+/* Italic byline under H1 */
+.inner > h1 + p > em {
+  color: #aaa;
+  font-style: italic;
+}

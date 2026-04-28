@@ -5,6 +5,10 @@ updated: 2026-04-28 13:51 EDT
 summary: "A scored map of MCP servers worth deploying behind a university LiteLLM gateway, distinguishing community-ready servers (GitHub, Atlassian, Microsoft 365, Snowflake, Grafana, arXiv, Canvas LMS) from the higher-ed gaps (institutional repository, Box, Zoom, library systems) where an in-house build is the right move."
 ---
 
+# MCP Server Ideas for Higher Education on a LiteLLM Gateway
+
+*Published 2026-04-28 — Infrastructure & applied research*
+
 ## TL;DR
 
 The Model Context Protocol (MCP) ecosystem has matured to the point where universities running a LiteLLM AI gateway can deploy a centrally-administered MCP layer on top of it with low marginal cost. Most enterprise MCP servers a developer or sysadmin would want (GitHub, Microsoft 365, Atlassian, Snowflake, Grafana, Datadog, BigQuery) are now official vendor builds, OAuth-bearing, and remote-hosted: the right move is to **buy** them. The higher-ed gaps are concentrated in scholarly tooling (OpenAlex, Crossref, ORCID, DSpace) and library systems (Alma, FOLIO, EBSCO), where no production MCP exists and clean public APIs make these the highest-leverage **build** targets for a university IT or library team. Canvas LMS sits in the middle: three credible community implementations exist, and the right pattern is fork-and-harden under FERPA review. Anthropic's Skills launch (October 2025) further sharpens the question: reserve MCP for live, authenticated APIs, and use Skills for institutional workflow knowledge.
