@@ -5,6 +5,34 @@ updated: 2026-04-28 13:51 EDT
 summary: "A scored map of MCP servers worth deploying behind a university LiteLLM gateway, distinguishing community-ready servers (GitHub, Atlassian, Microsoft 365, Snowflake, Grafana, arXiv, Canvas LMS) from the higher-ed gaps (institutional repository, Box, Zoom, library systems) where an in-house build is the right move."
 ---
 
+## TL;DR
+
+The Model Context Protocol (MCP) ecosystem has matured to the point where universities running a LiteLLM AI gateway can deploy a centrally-administered MCP layer on top of it with low marginal cost. Most enterprise MCP servers a developer or sysadmin would want (GitHub, Microsoft 365, Atlassian, Snowflake, Grafana, Datadog, BigQuery) are now official vendor builds, OAuth-bearing, and remote-hosted: the right move is to **buy** them. The higher-ed gaps are concentrated in scholarly tooling (OpenAlex, Crossref, ORCID, DSpace) and library systems (Alma, FOLIO, EBSCO), where no production MCP exists and clean public APIs make these the highest-leverage **build** targets for a university IT or library team. Canvas LMS sits in the middle: three credible community implementations exist, and the right pattern is fork-and-harden under FERPA review. Anthropic's Skills launch (October 2025) further sharpens the question: reserve MCP for live, authenticated APIs, and use Skills for institutional workflow knowledge.
+
+## Opening
+
+This report answers a practical question: what MCP servers should a university stand up behind its LiteLLM AI gateway, and which are worth building in-house versus adopting from the community? It scores each candidate against six dimensions (audience, build vs buy, gateway fit, prompt-injection risk, FERPA/HIPAA exposure, priority) across six audience categories (developers, sysadmins, library/scholarly, instructional, data/analytics, security/governance). The recommendations are evidence-based: every named MCP server has been verified by fetching its repo or vendor doc, and confidence levels are flagged where the evidence is thin. The audience is a university CIO, AI hub lead, library systems team, or IT architect deciding what to deploy.
+
+## Index
+
+1. [Current Status](#current-status) — Snapshot of LiteLLM, Anthropic, vendor, and ecosystem state
+2. [The university LiteLLM gateway context](#1-the-university-litellm-gateway-context) — What this report assumes about the deployment
+3. [LiteLLM as an MCP gateway: what it can do](#2-litellm-as-an-mcp-gateway-what-it-can-do) — Capabilities, transports, OAuth, observability
+4. [The MCP server landscape in 2026](#3-the-mcp-server-landscape-in-2026) — Three phases, the registry, Skills vs MCP
+5. [Recommended MCP servers — by audience](#4-recommended-mcp-servers-for-higher-education--by-audience)
+   - 5.1 [Developer / engineer](#41-developer--engineer-mcps)
+   - 5.2 [Sysadmin / SRE](#42-sysadmin--sre-mcps)
+   - 5.3 [Library / scholarly](#43-library--scholarly-mcps)
+   - 5.4 [Instructional / student-facing](#44-instructional--student-facing-mcps)
+   - 5.5 [Data / analytics](#45-data--analytics-mcps)
+   - 5.6 [Security / governance](#46-security--governance-mcps)
+6. [The "build vs buy" matrix](#5-the-build-vs-buy-matrix) — Cross-cut summary and top in-house targets
+7. [Industry trends shaping the recommendation](#6-industry-trends-shaping-the-recommendation) — Five forces
+8. [Gateway-specific architectural guidance](#7-gateway-specific-architectural-guidance) — Operating recommendations for a LiteLLM-fronted MCP layer
+9. [Confidence Assessment](#confidence-assessment) — Evidence rating per area
+10. [Open Questions](#open-questions) — Unresolved decisions for the implementer
+11. [Sources](#sources) — All citations grouped by category
+
 ## Current Status
 
 - LiteLLM ships a production **MCP Server Gateway** that lets the proxy act as both an MCP client (to upstream tool servers) and an MCP server (to LLMs and IDEs like Claude Code), with permission scoping by Key, Team, and Organization, and OAuth 2.0 support for both interactive (PKCE) and machine-to-machine flows ([docs.litellm.ai/docs/mcp](https://docs.litellm.ai/docs/mcp), [docs.litellm.ai/docs/mcp_oauth](https://docs.litellm.ai/docs/mcp_oauth), [DeepWiki: BerriAI/litellm 8.10](https://deepwiki.com/BerriAI/litellm/8.10-mcp-server-gateway)).
