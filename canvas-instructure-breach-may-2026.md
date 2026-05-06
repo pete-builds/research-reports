@@ -1,19 +1,21 @@
 ---
 title: "Canvas (Instructure) Security Breach: May 2026"
 date: 2026-05-05
-updated: 2026-05-05T23:06:28-04:00
+updated: 2026-05-06T12:38:41-04:00
 summary: "Instructure disclosed a cybersecurity incident on May 1, 2026 affecting its Canvas LMS. ShinyHunters claims 275M users across ~9,000 schools were impacted; Instructure confirms exposure of names, emails, student IDs, and user-to-user messages, but no passwords or financial data."
 ---
 
 ## Current Status
 
 - Instructure publicly disclosed the incident on May 1, 2026 and stated containment by May 2, 2026 [source: https://www.bitdefender.com/en-us/blog/hotforsecurity/canvas-data-breach-2026]
-- Confirmed exposed data: names, email addresses, student ID numbers, and messages exchanged among users [source: https://www.bleepingcomputer.com/news/security/instructure-confirms-data-breach-shinyhunters-claims-attack/]
+- Confirmed exposed data: names, email addresses, student ID numbers, and messages exchanged among users; some reporting also references phone numbers [source: https://www.bleepingcomputer.com/news/security/instructure-confirms-data-breach-shinyhunters-claims-attack/] [source: https://www.insidehighered.com/news/tech-innovation/administrative-tech/2026/05/05/pay-or-leak-hackers-target-big-higher-ed-vendor]
 - Instructure says no evidence that passwords, dates of birth, government identifiers, or financial information were involved [source: https://www.bitdefender.com/en-us/blog/hotforsecurity/canvas-data-breach-2026]
 - ShinyHunters listed Instructure on its leak site on May 3, 2026, claiming 3.65 TB of data covering ~9,000 schools and 275 million individuals; these numbers are unverified by Instructure [source: https://www.bleepingcomputer.com/news/security/instructure-confirms-data-breach-shinyhunters-claims-attack/]
-- Canvas Data 2 access was restored May 3, 2026; Canvas Beta and Test environments remained under maintenance through May 4-5 [source: https://gbhackers.com/canvas-confirms-data-breach-following-shinyhunters-claim/]
+- ShinyHunters' May 6, 2026 ransom deadline has arrived; as of midday ET no public bulk dump has been observed and Instructure has not commented on negotiations [source: https://www.malwarebytes.com/blog/news/2026/05/millions-of-students-personal-data-stolen-in-major-education-cyberattack]
+- Canvas Data 2 and Canvas Beta restored to all customers as of Instructure's May 5 update; no fresh status-page entry has been posted since [source: https://status.instructure.com/]
 - Instructure rotated application keys / OAuth tokens as a precaution, requiring customers to re-authorize integrations using newly issued, timestamp-named keys [source: https://www.bleepingcomputer.com/news/security/instructure-confirms-data-breach-shinyhunters-claims-attack/]
-- Initial attack vector has not been disclosed by Instructure; no CVE has been assigned and no IOCs published as of May 5, 2026 [source: https://gbhackers.com/canvas-confirms-data-breach-following-shinyhunters-claim/]
+- Initial attack vector has not been disclosed by Instructure; no CVE has been assigned and no IOCs published as of midday May 6, 2026 [source: https://gbhackers.com/canvas-confirms-data-breach-following-shinyhunters-claim/]
+- International disclosures emerging: University of Auckland (NZ) posted its first advisory on May 6, joining U.S. campuses (Rutgers, UT Austin, Boise State, UWM) [source: https://www.auckland.ac.nz/en/news/notices/2026/cybersecurity-incident-involving-canvas.html]
 
 ## Table of Contents
 
@@ -65,7 +67,8 @@ Confidence: High that key/token rotation occurred and that Canvas Data 2 / Beta 
 
 Reverse chronological. All times Eastern unless otherwise noted.
 
-- **May 5, 2026** - Canvas Data 2 and Beta services restored to most customers; Test environment still under maintenance for some [source: https://thecyberexpress.com/canvas-cybersecurity-incident/]
+- **May 6, 2026 (midday ET)** - ShinyHunters ransom deadline arrives. No public bulk leak observed as of this update. University of Auckland (NZ) posts its first cybersecurity advisory, becoming the first international institution to publicly comment [source: https://www.auckland.ac.nz/en/news/notices/2026/cybersecurity-incident-involving-canvas.html]
+- **May 5, 2026** - Canvas Data 2 and Beta services restored to most customers; Test environment still under maintenance for some. UWM posts advisory; Inside Higher Ed publishes "Pay or Leak" feature with sector-wide commentary [source: https://thecyberexpress.com/canvas-cybersecurity-incident/] [source: https://uwm.edu/information-technology/uwm-monitoring-nationwide-canvas-security-breach/] [source: https://www.insidehighered.com/news/tech-innovation/administrative-tech/2026/05/05/pay-or-leak-hackers-target-big-higher-ed-vendor]
 - **May 4, 2026** - Multiple universities (Rutgers, UT Austin, Boise State) issue advisories to their campuses [source: https://it.rutgers.edu/alerts/2026/05/04/nationwide-security-breach-involving-canvas/]
 - **May 3, 2026 (Sunday)** - ShinyHunters lists Instructure on its leak site claiming 3.65 TB / 275M users / ~9,000 schools, with a leak deadline of May 6, 2026. Canvas Data 2 access restored [source: https://securityaffairs.com/191686/cyber-crime/educational-tech-firm-instructure-data-breach-may-have-impacted-9000-schools.html]
 - **May 2, 2026 (Saturday)** - Instructure issues update confirming exposure of names, emails, student IDs, and messages; says incident is contained [source: https://www.bitdefender.com/en-us/blog/hotforsecurity/canvas-data-breach-2026]
@@ -108,9 +111,13 @@ A sample of public university advisories as of May 4-5, 2026:
 - **Rutgers University** (May 4): "A nationwide security incident involving Canvas, the university's learning management system... a vendor-driven, nationwide event affecting multiple institutions. Rutgers has not been notified of any direct impact to our campus." Canvas remains operational. No specific user actions advised beyond contacting the OIT Help Desk for issues [source: https://it.rutgers.edu/alerts/2026/05/04/nationwide-security-breach-involving-canvas/]
 - **UT Austin** (May 2026): States the incident "was not directed at UT Austin" and represents "a vendor-level event that may impact multiple institutions." Advises caution with phishing and to access Canvas only via canvas.utexas.edu [source: https://tech.utexas.edu/news/canvas-vendor-security-incident-may-2026]
 - **Boise State** (May 5): "We have no indication that Boise State Canvas data has been affected." Notes that university passwords are managed by the university's own systems and not shared with Canvas [source: https://www.boisestate.edu/oit/2026/05/05/widespread-data-breach-involving-canvas/]
+- **University of Wisconsin-Milwaukee** (May 5): "This breach will not affect final exams or course grades." Emphasizes that "UWM does not collect student ID numbers, dates of birth, government identifiers or financial information in Canvas." No confirmed UWM data exposure [source: https://uwm.edu/information-technology/uwm-monitoring-nationwide-canvas-security-breach/]
+- **University of Auckland (New Zealand)** (May 6): First international institutional advisory. Confirms potential exposure of names, emails, student IDs, and Canvas messaging content; states student assessment data, passwords, and SSO credentials were not affected. Notes "at this stage, no data has been released publicly" [source: https://www.auckland.ac.nz/en/news/notices/2026/cybersecurity-incident-involving-canvas.html]
 - **K-12 example - Wayzata Public Schools (MN)**: Activated incident response team, told families to watch for phishing referencing Canvas, and to monitor accounts for unusual activity [source: https://www.fox9.com/news/canvas-data-breach-hackers-claim-info-275-million-users-across-9000-schools]
 
-A class-action investigation has been announced (sponsored by Bryson Harris Suciu & DeMay PLLC); no suit has been filed as of the date of this report [source: https://www.classaction.org/data-breach-lawsuits/instructure-may-2026].
+Inside Higher Ed quoted cybersecurity commentators on May 5 framing the broader pattern: vendors like Canvas represent "armored trucks" of data, more attractive targets than individual institutions. ShinyHunters has also recently been publicly attributed to attacks involving University of Pennsylvania, Princeton, and Harvard environments [source: https://www.insidehighered.com/news/tech-innovation/administrative-tech/2026/05/05/pay-or-leak-hackers-target-big-higher-ed-vendor].
+
+A class-action investigation has been announced (sponsored by Bryson Harris Suciu & DeMay PLLC). Chimicles Schwartz Kriner & Donaldson-Smith LLP has also opened an investigation. As of midday May 6, 2026, no federal-court complaint has yet been filed [source: https://www.classaction.org/data-breach-lawsuits/instructure-may-2026] [source: https://chimicles.com/instructure-canvas-data-breach-investigation/].
 
 Confidence: High that these advisories exist with the cited content.
 
@@ -185,10 +192,11 @@ Confidence: High on items 1, 3, 4, 6, 7. Medium on item 5 (FERPA interpretation 
 
 - What was the actual initial access vector?
 - How many institutions had data confirmed exfiltrated, vs. those that were only theoretically in scope?
-- Will ShinyHunters release the data (deadline: May 6, 2026)?
+- ~~Will ShinyHunters release the data (deadline: May 6, 2026)?~~ Deadline arrived May 6; no public bulk dump observed at midday ET. Open: will the deadline slip, will partial samples appear, or did Instructure quietly negotiate?
 - Will Instructure publish a post-incident technical report or IOC list?
 - Is there a regulatory/notification timeline (state-AG breach notifications) that institutions need to plan around?
 - No CVE assigned: will this remain a credential/token compromise narrative or will a vulnerability later be cataloged?
+- Will more international institutions (UK Russell Group, Australia Group of Eight, Canadian U15) follow Auckland and post advisories?
 
 ## Sources
 
@@ -198,6 +206,8 @@ Confidence: High on items 1, 3, 4, 6, 7. Medium on item 5 (FERPA interpretation 
 - [UT Austin: Canvas Vendor Security Incident - May 2026](https://tech.utexas.edu/news/canvas-vendor-security-incident-may-2026)
 - [Rutgers IT: Nationwide security breach involving Canvas](https://it.rutgers.edu/alerts/2026/05/04/nationwide-security-breach-involving-canvas/)
 - [Boise State OIT: Widespread data breach involving Canvas](https://www.boisestate.edu/oit/2026/05/05/widespread-data-breach-involving-canvas/)
+- [UWM IT: UWM monitoring nationwide Canvas security breach](https://uwm.edu/information-technology/uwm-monitoring-nationwide-canvas-security-breach/)
+- [University of Auckland: Cybersecurity incident involving Canvas](https://www.auckland.ac.nz/en/news/notices/2026/cybersecurity-incident-involving-canvas.html)
 
 ### Government / CERT Advisories
 
@@ -226,10 +236,13 @@ Confidence: High on items 1, 3, 4, 6, 7. Medium on item 5 (FERPA interpretation 
 - [The Cyber Express: Canvas Cybersecurity Incident Exposes User Data](https://thecyberexpress.com/canvas-cybersecurity-incident/)
 - [TechJack Solutions: Instructure Canvas Discloses Second Cybersecurity Incident in Eight Months](https://techjacksolutions.com/scc-intel/instructure-canvas-discloses-second-cybersecurity-incident-in-eight-months-amid-ongoing-investigation/)
 - [FOX 9: Wayzata Public Schools warns parents of Canvas breach](https://www.fox9.com/news/canvas-data-breach-hackers-claim-info-275-million-users-across-9000-schools)
+- [Inside Higher Ed: "PAY OR LEAK": Hackers Target Big Higher Ed Vendor](https://www.insidehighered.com/news/tech-innovation/administrative-tech/2026/05/05/pay-or-leak-hackers-target-big-higher-ed-vendor)
+- [Malwarebytes: Millions of students' personal data stolen in major education breach](https://www.malwarebytes.com/blog/news/2026/05/millions-of-students-personal-data-stolen-in-major-education-cyberattack)
 
 ### Litigation
 
 - [ClassAction.org: Instructure Data Breach Confirmed, Attorneys Investigating](https://www.classaction.org/data-breach-lawsuits/instructure-may-2026)
+- [Chimicles Schwartz Kriner & Donaldson-Smith: Instructure (Canvas LMS) Data Breach Investigation](https://chimicles.com/instructure-canvas-data-breach-investigation/)
 
 ### Community Tools & Resources
 
@@ -237,6 +250,7 @@ Confidence: High on items 1, 3, 4, 6, 7. Medium on item 5 (FERPA interpretation 
 
 ## Update History
 
+- 2026-05-06 12:38 PM ET - ShinyHunters ransom deadline (May 6) arrived: no public bulk dump observed at midday ET. Added University of Auckland (first international advisory) and UWM advisories. Added Inside Higher Ed "Pay or Leak" feature and Malwarebytes coverage. Noted second class-action investigator (Chimicles). Updated Open Questions. Status page and bleepingcomputer/gbhackers/bitdefender priority sources have not changed since initial report.
 - 2026-05-05 11:06 PM ET - Initial report
 
 ## How This Report Was Generated
