@@ -1,7 +1,7 @@
 ---
 title: "Canvas (Instructure) Security Breach: May 2026"
 date: 2026-05-05
-updated: 2026-05-06T16:37:40-04:00
+updated: 2026-05-06T20:39:16-04:00
 summary: "Instructure disclosed a cybersecurity incident on May 1, 2026 affecting its Canvas LMS. ShinyHunters claims 275M users across ~9,000 schools were impacted; Instructure confirms exposure of names, emails, student IDs, and user-to-user messages, but no passwords or financial data."
 ---
 
@@ -12,8 +12,9 @@ summary: "Instructure disclosed a cybersecurity incident on May 1, 2026 affectin
 - Instructure says no evidence that passwords, dates of birth, government identifiers, or financial information were involved [source: https://www.bitdefender.com/en-us/blog/hotforsecurity/canvas-data-breach-2026]
 - ShinyHunters listed Instructure on its leak site on May 3, 2026, claiming 3.65 TB of data covering ~9,000 schools and 275 million individuals; these numbers are unverified by Instructure [source: https://www.bleepingcomputer.com/news/security/instructure-confirms-data-breach-shinyhunters-claims-attack/]
 - ShinyHunters extended the original May 6, 2026 ransom deadline. Per a group spokesperson, schools have until end-of-day May 7 to make contact, with full leak threatened by May 8 if no engagement [source: https://www.thedp.com/article/2026/05/penn-cybercrime-shiny-hunters-canvas-hack-students]
-- Canvas Test environment now restored as of May 6, 13:17 MDT (15:17 ET); Canvas Data 2 and Beta remain available. Status page shows "Confirmed Security Incident" still unresolved [source: https://status.instructure.com/]
+- Instructure has formally marked the incident **Resolved** on its status page with the closing statement "Canvas is fully operational, and we are not seeing any ongoing unauthorized activity"; this is the vendor's first explicit closing statement [source: https://status.instructure.com/]
 - University of Pennsylvania has confirmed approximately 306,000 Penn users affected, with VP of IT Joshua Beeman publicly statement; this is the first US institution to publish a specific impacted-user count [source: https://www.thedp.com/article/2026/05/penn-cybercrime-shiny-hunters-canvas-hack-students]
+- Baylor University publicly confirmed it was impacted on May 6 via its ITS advisory; second US higher-ed institution after Penn to confirm Baylor data was on Instructure servers, though no specific user count was given. Baylor noted Bear ID passwords were not stored at Instructure due to DUO 2FA [source: https://its.web.baylor.edu/news/story/2026/instructure-data-breach-impacts-us-universities]
 - Instructure rotated application keys / OAuth tokens as a precaution, requiring customers to re-authorize integrations using newly issued, timestamp-named keys [source: https://www.bleepingcomputer.com/news/security/instructure-confirms-data-breach-shinyhunters-claims-attack/]
 - Initial attack vector has not been disclosed by Instructure; no CVE has been assigned and no IOCs published as of midday May 6, 2026 [source: https://gbhackers.com/canvas-confirms-data-breach-following-shinyhunters-claim/]
 - International disclosures emerging: University of Auckland (NZ) posted its first advisory on May 6, joining U.S. campuses (Rutgers, UT Austin, Boise State, UWM) [source: https://www.auckland.ac.nz/en/news/notices/2026/cybersecurity-incident-involving-canvas.html]
@@ -68,6 +69,8 @@ Confidence: High that key/token rotation occurred and that Canvas Data 2 / Beta 
 
 Reverse chronological. All times Eastern unless otherwise noted.
 
+- **May 6, 2026 (evening ET, ~5:13 PM MDT / 7:13 PM ET)** - Instructure formally marks the incident **Resolved** on its status page with the closing statement: "Canvas is fully operational, and we are not seeing any ongoing unauthorized activity." First explicit vendor close-out [source: https://status.instructure.com/]
+- **May 6, 2026 (afternoon-evening ET)** - Baylor University publishes ITS advisory confirming "BaylorITS was notified on May 6, 2026 that a data breach at Instructure has impacted Baylor's data stored on their servers." Notes DUO 2FA means Bear ID passwords were not stored on Instructure. Frames the incident as "not directed at Baylor" but part of a "larger breach" affecting many higher-ed customers. Second US higher-ed institution to publicly confirm impact, after Penn [source: https://its.web.baylor.edu/news/story/2026/instructure-data-breach-impacts-us-universities]
 - **May 6, 2026 (~4:30 PM ET)** - University of Pennsylvania publicly confirms approximately 306,000 Penn users affected via Daily Pennsylvanian reporting. VP of IT Joshua Beeman issues statement. First US institution to publish a specific impacted-user count [source: https://www.thedp.com/article/2026/05/penn-cybercrime-shiny-hunters-canvas-hack-students]
 - **May 6, 2026 (3:17 PM ET / 13:17 MDT)** - Canvas Test environment fully restored per Instructure status page; all customer environments now operational [source: https://status.instructure.com/]
 - **May 6, 2026 (afternoon ET)** - ShinyHunters extends ransom deadline. Per group spokesperson, schools have until end-of-day May 7 to make contact; full data leak threatened May 8 if no engagement [source: https://www.thedp.com/article/2026/05/penn-cybercrime-shiny-hunters-canvas-hack-students] [source: https://hackread.com/shinyhunters-instructure-canvas-lms-vimeo-data-breach/]
@@ -102,6 +105,8 @@ Per Instructure's own status page and CISO Steve Proud's statement, the company 
 
 Instructure stated in its May 2 update: "While our investigation continues alongside our outside forensics experts, at this stage we believe the incident has been contained" [source: https://www.bitdefender.com/en-us/blog/hotforsecurity/canvas-data-breach-2026].
 
+On the evening of May 6 (US ET), Instructure marked the status-page incident "Resolved" with the closing line: "Canvas is fully operational, and we are not seeing any ongoing unauthorized activity." This is the vendor's first explicit close-out, and it lands ~24 hours before the ShinyHunters May 7 end-of-day contact deadline [source: https://status.instructure.com/].
+
 Direct quote on transparency from Steve Proud: "Maintaining your trust is our highest priority, and we are committed to transparency throughout this process" [source: https://www.bleepingcomputer.com/news/security/edu-tech-firm-instructure-discloses-cyber-incident-probes-impact/].
 
 Instructure declined to answer detailed press questions about scope, timing, extortion demands, or affected institution counts; spokesperson Kate Holmes directed inquiries to the status page [source: https://techcrunch.com/2026/05/05/hackers-steal-students-data-during-breach-at-education-tech-giant-instructure/].
@@ -118,6 +123,7 @@ A sample of public university advisories as of May 4-5, 2026:
 - **University of Wisconsin-Milwaukee** (May 5): "This breach will not affect final exams or course grades." Emphasizes that "UWM does not collect student ID numbers, dates of birth, government identifiers or financial information in Canvas." No confirmed UWM data exposure [source: https://uwm.edu/information-technology/uwm-monitoring-nationwide-canvas-security-breach/]
 - **University of Auckland (New Zealand)** (May 6): First international institutional advisory. Confirms potential exposure of names, emails, student IDs, and Canvas messaging content; states student assessment data, passwords, and SSO credentials were not affected. Notes "at this stage, no data has been released publicly" [source: https://www.auckland.ac.nz/en/news/notices/2026/cybersecurity-incident-involving-canvas.html]
 - **University of Pennsylvania** (May 6, afternoon ET): First US institution to confirm a specific user count. Approximately 306,000 Penn users affected per ShinyHunters' published list, with course enrollments, names, emails, and Penn ID numbers exposed. VP of IT Joshua Beeman: "securing Penn's data is our top priority"; security team "collaborating with the affected vendor, industry professionals, and law enforcement." Notable context: ShinyHunters previously targeted Penn in October 2025 and released internal GSE files after Penn refused a $1M ransom [source: https://www.thedp.com/article/2026/05/penn-cybercrime-shiny-hunters-canvas-hack-students]
+- **Baylor University** (May 6, evening ET): Second US higher-ed institution to confirm impact. Per ITS advisory: "BaylorITS was notified on May 6, 2026 that a data breach at Instructure has impacted Baylor's data stored on their servers." Notes that Bear ID passwords were not stored at Instructure due to DUO 2FA. Frames the incident as "not directed at Baylor, but is part of a larger breach that impacted a yet to be determined number of their higher education customers." No specific user count was disclosed [source: https://its.web.baylor.edu/news/story/2026/instructure-data-breach-impacts-us-universities]
 - **K-12 example - Wayzata Public Schools (MN)**: Activated incident response team, told families to watch for phishing referencing Canvas, and to monitor accounts for unusual activity [source: https://www.fox9.com/news/canvas-data-breach-hackers-claim-info-275-million-users-across-9000-schools]
 
 Inside Higher Ed quoted cybersecurity commentators on May 5 framing the broader pattern: vendors like Canvas represent "armored trucks" of data, more attractive targets than individual institutions. ShinyHunters has also recently been publicly attributed to attacks involving University of Pennsylvania, Princeton, and Harvard environments [source: https://www.insidehighered.com/news/tech-innovation/administrative-tech/2026/05/05/pay-or-leak-hackers-target-big-higher-ed-vendor].
@@ -198,7 +204,7 @@ Confidence: High on items 1, 3, 4, 6, 7. Medium on item 5 (FERPA interpretation 
 - What was the actual initial access vector?
 - How many institutions had data confirmed exfiltrated, vs. those that were only theoretically in scope?
 - ~~Will ShinyHunters release the data (deadline: May 6, 2026)?~~ Deadline extended afternoon May 6: schools have until end-of-day May 7 to contact, full leak threatened May 8. Open: will Instructure or any school engage, will partial dump appear May 7, or will full leak land May 8?
-- Will more US institutions follow Penn's lead and publish specific impacted-user counts? Penn at 306K is the first concrete number from an affected school.
+- Will more US institutions follow Penn's lead and publish specific impacted-user counts? Penn at 306K remains the only concrete count; Baylor confirmed impact on May 6 evening but did not provide a number.
 - Will Instructure publish a post-incident technical report or IOC list?
 - Is there a regulatory/notification timeline (state-AG breach notifications) that institutions need to plan around?
 - No CVE assigned: will this remain a credential/token compromise narrative or will a vulnerability later be cataloged?
@@ -215,6 +221,7 @@ Confidence: High on items 1, 3, 4, 6, 7. Medium on item 5 (FERPA interpretation 
 - [UWM IT: UWM monitoring nationwide Canvas security breach](https://uwm.edu/information-technology/uwm-monitoring-nationwide-canvas-security-breach/)
 - [University of Auckland: Cybersecurity incident involving Canvas](https://www.auckland.ac.nz/en/news/notices/2026/cybersecurity-incident-involving-canvas.html)
 - [The Daily Pennsylvanian: Over 300,000 Penn users affected in Canvas hack, cybercrime group claims](https://www.thedp.com/article/2026/05/penn-cybercrime-shiny-hunters-canvas-hack-students)
+- [Baylor ITS: Instructure Data Breach Impacts U.S. Universities](https://its.web.baylor.edu/news/story/2026/instructure-data-breach-impacts-us-universities)
 
 ### Government / CERT Advisories
 
@@ -229,6 +236,8 @@ Confidence: High on items 1, 3, 4, 6, 7. Medium on item 5 (FERPA interpretation 
 ### News Coverage
 
 - [BleepingComputer: Instructure confirms data breach, ShinyHunters claims attack](https://www.bleepingcomputer.com/news/security/instructure-confirms-data-breach-shinyhunters-claims-attack/)
+- [BleepingComputer: Instructure hacker claims data theft from 8,800 schools, universities](https://www.bleepingcomputer.com/news/security/instructure-hacker-claims-data-theft-from-8-800-schools-universities/)
+- [Dataminr: Cyber Intel Brief - ShinyHunters Claims Breach of Canvas LMS](https://www.dataminr.com/resources/intel-brief/shinyhunters-claims-instructure-canvas-breach/)
 - [BleepingComputer: Edu tech firm Instructure discloses cyber incident, probes impact](https://www.bleepingcomputer.com/news/security/edu-tech-firm-instructure-discloses-cyber-incident-probes-impact/)
 - [SecurityWeek: Edtech Firm Instructure Discloses Data Breach](https://www.securityweek.com/edtech-firm-instructure-discloses-data-breach/)
 - [TechCrunch: Hackers steal students' data during breach at education tech giant Instructure](https://techcrunch.com/2026/05/05/hackers-steal-students-data-during-breach-at-education-tech-giant-instructure/)
@@ -258,6 +267,7 @@ Confidence: High on items 1, 3, 4, 6, 7. Medium on item 5 (FERPA interpretation 
 
 ## Update History
 
+- 2026-05-06 8:39 PM ET - Vendor close-out and second US institutional disclosure: (1) Instructure formally marked the incident **Resolved** on its status page with "Canvas is fully operational, and we are not seeing any ongoing unauthorized activity." This is the first explicit vendor close, landing ~24 hours before the ShinyHunters May 7 end-of-day deadline. (2) Baylor University ITS published an advisory confirming Baylor data was on Instructure servers; second US higher-ed institution to publicly confirm impact (after Penn). No user count given. Also added BleepingComputer follow-up article (institution list, 8,800 schools) and Dataminr Cyber Intel Brief to sources. Still no leak observed, no CVE, no CISA advisory, no class-action complaint filed.
 - 2026-05-06 4:37 PM ET - Two material developments: (1) ShinyHunters extended deadline. Schools now have until end-of-day May 7 to make contact, full leak threatened May 8. (2) University of Pennsylvania publicly confirmed approximately 306,000 Penn users affected via Daily Pennsylvanian; first US institution to publish a specific user count. VP of IT Joshua Beeman issued statement. Penn previously refused a $1M ShinyHunters ransom in October 2025 (separate incident). Canvas Test environment fully restored 3:17 PM ET; all customer environments now operational. Still no CVE, CISA advisory, or Instructure attack-vector statement. Hackread reported a parallel ShinyHunters Vimeo breach (separate supply-chain attack via Anodot).
 - 2026-05-06 12:38 PM ET - ShinyHunters ransom deadline (May 6) arrived: no public bulk dump observed at midday ET. Added University of Auckland (first international advisory) and UWM advisories. Added Inside Higher Ed "Pay or Leak" feature and Malwarebytes coverage. Noted second class-action investigator (Chimicles). Updated Open Questions. Status page and bleepingcomputer/gbhackers/bitdefender priority sources have not changed since initial report.
 - 2026-05-05 11:06 PM ET - Initial report
