@@ -3,10 +3,10 @@ title: "Claude Desktop app (3P API → AWS Bedrock via IdC SSO): the Code tab sp
 audience: "Pete (Cornell Mac, Jamf-managed, Cornell AI Gateway in front of Bedrock)"
 report_type: "diagnostic + product-limitation analysis"
 date: 2026-05-27
-updated: 2026-05-27 4:50 PM ET
+updated: 2026-05-27 5:54 PM ET
 timezone: America/New_York
 generated_by: Research agent (Claude Code)
-summary: "Claude Desktop's Code tab is not designed to run against Bedrock. Anthropic's own docs say the Desktop app's Code tab defaults to api.anthropic.com and that 'For Bedrock or Foundry, use the CLI.' The spinning Code tab is consistent with three known, documented failure modes that share a root cause: the Code tab's auth path is independent of, and incompatible with, the Chat tab's 3P-gateway / Bedrock configuration."
+summary: "Claude Desktop's Code tab is not designed to run against Bedrock. Anthropic's own docs say the Desktop app's Code tab defaults to api.anthropic.com and that 'For Bedrock or Foundry, use the CLI.' The spinning Code tab is consistent with three known, documented failure modes that share a root cause: the Code tab's auth path is independent of, and incompatible with, the Chat tab's 3P-gateway / Bedrock configuration. Follow-up section ([Section 8](#8-adding-skills-and-web-search-on-bedrock-the-cli-recipe)) covers how to add Agent Skills and web search to the CLI-on-Bedrock fallback: custom skills work natively, the marketplace and Anthropic's server-side web_search are blocked, and the recommended bridge is Pete's existing searxng MCP."
 ---
 
 # Claude Desktop app (3P API → AWS Bedrock via IdC SSO): the Code tab spins
@@ -48,12 +48,14 @@ As of 2026-05-27:
   - [5. Recommended path forward for Pete's setup](#5-recommended-path-forward-for-petes-setup)
   - [6. Diagnostic playbook](#6-diagnostic-playbook)
   - [7. Limitations of Claude Desktop in 3P mode (full inventory)](#7-limitations-of-claude-desktop-in-3p-mode-full-inventory)
+  - [8. Adding Skills and web search on Bedrock (the CLI recipe)](#8-adding-skills-and-web-search-on-bedrock-the-cli-recipe)
 - [Confidence Assessment](#confidence-assessment)
 - [Open Questions](#open-questions)
 - [Sources](#sources)
   - [Official Anthropic / AWS docs](#official-anthropic--aws-docs)
   - [Most-relevant GitHub issues (anthropics/claude-code)](#most-relevant-github-issues-anthropicsclaude-code)
   - [Community walkthroughs and operator guides](#community-walkthroughs-and-operator-guides)
+  - [Skills, web search, and Bedrock parity (added 2026-05-27 5:38 PM ET)](#skills-web-search-and-bedrock-parity-added-2026-05-27-538-pm-et)
 - [Update History](#update-history)
 - [How This Report Was Generated](#how-this-report-was-generated)
 
@@ -313,6 +315,176 @@ What works and what doesn't in Claude Desktop when configured for third-party AP
 - The Bedrock Invoke API is used, not the Converse API
 - `/logout` is unavailable on Bedrock; auth is handled through AWS credentials
 
+### 8. Adding Skills and web search on Bedrock (the CLI recipe)
+
+Pete asked the follow-up question that Section 5 implicitly raises: once you've fallen back to the **Claude Code CLI on Bedrock** (Option A), how do you get **Agent Skills** and **web search** working there? Section 4 already noted that AWS's Cowork-on-Bedrock blurb names "the Chat tab, Computer Use, and the Skills Marketplace" as the exclusions; this section makes that precise for the CLI scenario Pete will actually be operating in.
+
+The short answer: **custom skills work natively on Bedrock, the marketplace install path also works, but Anthropic's pre-built skills that depend on the hosted code-execution container do not. Anthropic's server-side `web_search` and `web_fetch` tools are blocked by Bedrock; Pete should use his own `searxng` MCP (already in his stack) and the built-in `WebFetch` tool to fill the gap.**
+
+#### 8.1 Agent Skills: what works on Bedrock and what doesn't
+
+**Skills are a client-side feature in Claude Code.** Anthropic's docs are explicit:
+
+> "Skills are reusable, filesystem-based resources that provide Claude with domain-specific expertise... Custom Skills in Claude Code are filesystem-based and don't require API uploads" ([source: Agent Skills overview](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview)).
+
+A skill is a directory with a `SKILL.md` file containing YAML frontmatter (`name`, `description`) and markdown instructions. Claude Code loads skill metadata at startup into the system prompt; full skill content loads on-demand when triggered ([source: Claude Code skills docs](https://code.claude.com/docs/en/skills)). All of this happens **client-side, in the user's filesystem and process**. The Bedrock back-end never sees "a skill" — it sees normal Claude Code messages with the skill's text inlined when triggered. This means model-provider choice is irrelevant to whether skills work.
+
+The Anthropic docs page on Agent Skills makes the surface support explicit:
+
+> "[Claude Code](https://code.claude.com/docs/en/overview) supports only Custom Skills. **Custom Skills**: Create Skills as directories with SKILL.md files. Claude discovers and uses them automatically. Custom Skills in Claude Code are filesystem-based and don't require API uploads." ([source](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview))
+
+And from the Claude Code docs:
+
+> "Where you store a skill determines who can use it: `~/.claude/skills/<skill-name>/SKILL.md`, `.claude/skills/<skill-name>/SKILL.md`, `<plugin>/skills/<skill-name>/SKILL.md`" ([source](https://code.claude.com/docs/en/skills)).
+
+Pete's skills under `~/.claude/skills/` (Tank, Apoc, Coach, Beat, Editor, etc., all enumerated in his routing table) **are loaded directly from disk and work identically against Bedrock, Vertex, Foundry, or Anthropic-direct**. The skill's body becomes part of the system prompt; the LLM sees text, not "a skill object."
+
+**What's blocked: pre-built Anthropic Skills that need the hosted code-execution container.** Anthropic ships first-party skills like `pdf`, `xlsx`, `docx`, `pptx` (the document-creation ones). Per the Skills overview:
+
+> "Pre-built Agent Skills are available on claude.ai, the Claude API, [Claude Platform on AWS](/docs/en/build-with-claude/claude-platform-on-aws), and [Microsoft Foundry](/docs/en/build-with-claude/claude-in-microsoft-foundry)." ([source](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview))
+
+Bedrock is **conspicuously absent** from that list. The reason is in the prerequisites: pre-built skills require three beta headers (`code-execution-2025-08-25`, `skills-2025-10-02`, `files-api-2025-04-14`) and run "in the code execution container" alongside the Files API ([source](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview)). Bedrock doesn't expose Anthropic's hosted code-execution / Files API surface, so the API-uploaded pre-built skills can't run there. ([Note: "Claude Platform on AWS" is a separate Anthropic-operated AWS Marketplace product that does support pre-built skills; that is not the same as "Claude in Amazon Bedrock," which is what Pete is using. The Claude Platform on AWS distinction is documented in the Bedrock page header: it "serves Claude through the Messages API at /anthropic/v1/messages... For an Anthropic-operated alternative on AWS with AWS Marketplace billing and typically same-day feature access, see Claude Platform on AWS" ([source](https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock)).])
+
+The closely-related "Skills Marketplace" feature in Claude Desktop's Cowork tab is the one the AWS blog explicitly excludes from Cowork-on-Bedrock ([source](https://aws.amazon.com/blogs/machine-learning/from-developer-desks-to-the-whole-organization-running-claude-cowork-in-amazon-bedrock/) and see [Section 4](#4-the-cowork-on-bedrock-product-and-its-gaps) above). That's a separate, Anthropic-hosted UI for browsing and installing community skills into the Desktop app's Chat/Cowork surfaces. It's distinct from the Claude Code CLI plugin marketplace (next paragraph), which works fine on Bedrock.
+
+**What does work on Bedrock CLI: the Claude Code plugin marketplace.** Anthropic ships a plugin-marketplace mechanism in the CLI itself, and it's filesystem-based:
+
+> "You can register this repository as a Claude Code Plugin marketplace by running the following command in Claude Code: `/plugin marketplace add anthropics/skills`. Then, to install a specific set of skills: Select `Browse and install plugins` → Select `anthropic-agent-skills` → Select `document-skills` or `example-skills` → Select `Install now`." ([source: anthropics/skills repo](https://github.com/anthropics/skills))
+
+This installs skill folders into the CLI's local plugin directory. The skills then run client-side like any other custom skill. So Pete can use `/plugin marketplace add anthropics/skills` (or any third-party marketplace) on his Bedrock-backed CLI and the install itself succeeds. Whether each individual installed skill actually works depends on what it needs at runtime: a skill that calls `git`, edits files, or runs bash is fine; a skill that requires the Anthropic Files API or hosted code-execution container will fail when triggered (the bash commands in `SKILL.md` will run, but anything that calls Anthropic-hosted infrastructure won't).
+
+**Bundled skills shipped with the CLI all work on Bedrock.** Claude Code ships built-in bundled skills like `/code-review`, `/batch`, `/debug`, `/loop`, `/claude-api`, `/run`, `/verify` ([source](https://code.claude.com/docs/en/skills)). These are "prompt-based: they give Claude detailed instructions and let it orchestrate the work using its tools" ([source: same](https://code.claude.com/docs/en/skills)), so they're 100% client-side and work identically on any model provider. Pete already uses several of these (e.g., `/code-review`, `/verify`, `/run`) per his skill list.
+
+**Reconciling an apparent contradiction in the official docs.** The Anthropic Bedrock page lists "Agent infrastructure (Agent Skills, MCP connector, programmatic tool calling)" under **Features not supported** ([source](https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock)). Read in isolation, that looks like a flat "no Agent Skills on Bedrock." It is not. That bullet refers specifically to **API-uploaded Skills via the Skills API** (the server-side path that requires the `skills-2025-10-02` + `code-execution-2025-08-25` + `files-api-2025-04-14` beta headers and runs inside Anthropic's hosted code-execution container). That whole pipeline is what Bedrock doesn't expose. **Claude Code CLI's filesystem-based custom skills are a different mechanism entirely**: the skill content is loaded by the CLI on Pete's machine and inlined into the system prompt as plain text; the Bedrock back-end only ever sees Messages-API text, no "skill object," no beta headers, no Files API. That is why filesystem skills work and API-uploaded pre-built skills don't — they are two different things sharing a name.
+
+**Confidence: High** that custom and bundled skills work on Bedrock; **High** that the marketplace install command (`/plugin marketplace add`) works on Bedrock; **High** that pre-built Anthropic skills requiring the hosted code-execution container do not work on Bedrock.
+
+Independent confirmation in the wild: Gunnar Grosch's series on running Claude Code with Bedrock spends the entire fifth post on "Extending Claude Code with Plugins and Skills for AWS Development" with no Bedrock-specific caveats on skills, only on the bundled marketplace concept ([source](https://dev.to/gunnargrosch/extending-claude-code-with-plugins-and-skills-for-aws-development-4p9o)). Haowen Huang's dev.to walkthrough on Claude Agent SDK with Skills on Bedrock concludes: "Everything from the original SDK works: Skills, Subagents with parallel execution, MCP servers (Notion, etc.), All built-in tools (WebSearch, Bash, Write, etc.)" ([source](https://dev.to/haowen_huang/running-claude-agent-sdk-with-skills-on-amazon-bedrock-el6)) — though see Section 8.2 below on the WebSearch caveat in that quote.
+
+#### 8.2 Web search: what works on Bedrock and what doesn't
+
+This is the more constrained side of the answer.
+
+**Anthropic's `web_search` server tool is NOT available on Amazon Bedrock.** Three independent confirmations:
+
+1. Anthropic's own web-search-tool docs: "The web search tool (with and without dynamic filtering) is available on the Claude API, [Claude Platform on AWS](/docs/en/build-with-claude/claude-platform-on-aws), and [Microsoft Foundry](/docs/en/build-with-claude/claude-in-microsoft-foundry). **Web search is not available on Amazon Bedrock.**" ([source](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool))
+
+2. AWS re:Post answer (AWS Official tag): "As of the latest available information, Amazon Bedrock does not directly support the `web_search` tool for Anthropic models through the Converse API in the way you've described." Reproducer's error: `An error occurred (ValidationException) when calling the Converse operation: The model returned the following errors: tools.0: Input tag 'web_search_20250305' found using 'type' does not match any of the expected tags: 'bash_20250124', 'custom', 'text_editor_20250124'` ([source](https://repost.aws/questions/QUSd3wAByQTtyzUPzgqss3TQ/web-search-for-anthropic-models-in-bedrock)).
+
+3. Operator post: "Anthropic's Claude 3 models recently introduced new tools such as `web_search_20250305` and `code_execution_20250305`. These are available via the Anthropic API, but Bedrock hasn't yet added support for these tool types. As a result, any tool request using these identifiers is blocked before it ever reaches the Claude model" ([source](https://www.tech-reader.blog/2025/05/solve-validationexception-websearch-not.html)).
+
+The same is true for **Anthropic's `web_fetch` server tool**: "The web fetch tool (with and without dynamic filtering) is available on the Claude API, Claude Platform on AWS, and Microsoft Foundry. **It is not currently available on Amazon Bedrock or Vertex AI.**" ([source](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool)).
+
+**Claude Code's built-in `WebSearch` tool is hidden on Bedrock-backed sessions.** Reverse-engineering of Claude Code's runtime by Mikhail Shilkov:
+
+> "When it doesn't know the URL, Claude Code issues search requests to Anthropic's server-side `WebSearch` tool, the same one that Claude chat uses... **The server-side search tool is available on Anthropic's first-party API but it isn't supported on Bedrock/Vertex. If Claude Code is configured to use those platforms, Claude Code hides the `WebSearch` tool entirely.**" ([source](https://mikhail.io/2025/10/claude-code-web-tools/))
+
+This is exactly the behavior reported in the closed-as-duplicate bug [#32385](https://github.com/anthropics/claude-code/issues/32385) ("WebSearch, Token Counting API unavailable on bedrock-connected billing accounts"), and the upstream [#11369](https://github.com/anthropics/claude-code/issues/11369) ("web search not working (Did 0 searches in 7s)") that has comments from multiple users confirming the same behavior on Bedrock, LiteLLM-routed-to-Bedrock, and Vertex deployments. The bug was closed inactive without a fix.
+
+**Claude Code's built-in `WebFetch` tool: likely works on Bedrock.** This is the important asymmetry, and one Pete should plan around. Per Mikhail Shilkov's runtime analysis, `WebFetch` runs through an Anthropic-operated pipeline: a backend `domain_info` endpoint resolves and fetches the URL, the HTML is converted to Markdown, and a fast model (Haiku 3.5) on Anthropic's API summarizes the result ([source](https://mikhail.io/2025/10/claude-code-web-tools/)). The fetch + summarization pipeline is operated by Anthropic, but the inference does **not** depend on the configured backend model — Haiku 3.5 is the summarizer regardless of whether Pete is on Bedrock, Vertex, or Anthropic-direct. That's the architectural reason `WebFetch` should not be gated by the Bedrock setting in the same way `WebSearch` is. **(Medium confidence: I did not find an explicit Anthropic doc statement that `WebFetch` works on Bedrock-backed Claude Code sessions, and Shilkov's source describes the Anthropic-backend pipeline rather than a purely-local fetch. The conclusion is inferred from the architecture, the existence of a separate Haiku-summarization call, and the absence of `WebFetch` from the bug reports about WebSearch on Bedrock. Pete should validate with a `WebFetch` invocation against a known URL in his first Bedrock CLI session.)** If `WebFetch` is also blocked, the searxng MCP recommendation below covers fetch as well as search.
+
+**Third-party MCP servers fill the gap.** Because Anthropic's `web_search` server tool is blocked on Bedrock and Claude Code's built-in `WebSearch` is therefore hidden, the only architecturally-clean way to get search on Bedrock-backed Claude Code is an MCP server. MCP servers run client-side and pass results back to Claude as ordinary tool-use blocks, so they're completely model-provider-agnostic. Pete's options, ranked:
+
+1. **Pete's own `pete-builds/mcp-searxng`** ([source](https://github.com/pete-builds/mcp-searxng)). His memory file flags this as his preferred default ([[feedback_searxng_primary]]). It's a FastMCP server, wraps a self-hosted SearXNG, requires no API keys, and ships 9 tools including `search`, `search_deep`, `search_tech`, `read_url`, and a person-vetting fan-out. This is the obvious recommendation and the one he should put in his `~/.claude/settings.json` MCP block first.
+
+2. **Brave Search MCP server** (`@brave/brave-search-mcp-server`) — official Brave-maintained, web/local/places/image/video/news/AI summarization tools, STDIO + HTTP transports ([source](https://github.com/brave/brave-search-mcp-server)). Free tier of Brave Search API is fine for moderate use.
+
+3. **Tavily MCP** — AI-focused search and extraction, sophisticated filtering ([source](https://docs.tavily.com/documentation/mcp)). Pay-per-call.
+
+4. **Exa MCP** — semantic/AI-tuned search optimized for LLM workflows ([source](https://exa.ai/docs/reference/exa-mcp)). Best for research-style queries.
+
+5. **Gemini-search skill** — Pete already has this in his skills list (uses Cornell Gateway Gemini Enterprise Web Search). Works on Bedrock because it makes its own outbound HTTP call from Pete's shell.
+
+For Pete, recommendation #1 is the answer. The other options exist for completeness.
+
+#### 8.3 Recommended `~/.claude/settings.json` for Pete
+
+Combining the Section 5 Bedrock auth recipe with the Section 8.1/8.2 skills + web-search recipe, the consolidated `~/.claude/settings.json` for the **Claude Code CLI on Bedrock** path looks like this. (Skills are auto-discovered from `~/.claude/skills/` and `~/.claude/plugins/`; nothing to configure in settings.json for skills themselves.)
+
+```json
+{
+  "awsAuthRefresh": "aws sso login --profile <pete-cornell-bedrock-profile>",
+  "env": {
+    "CLAUDE_CODE_USE_BEDROCK": "1",
+    "AWS_PROFILE": "<pete-cornell-bedrock-profile>",
+    "AWS_REGION": "<region-that-hosts-pete's-target-models>",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "us.anthropic.claude-sonnet-4-6",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "us.anthropic.claude-opus-4-7"
+  },
+  "mcpServers": {
+    "searxng": {
+      "type": "http",
+      "url": "http://<pete's-searxng-mcp-host>:<port>"
+    }
+  }
+}
+```
+
+If Cornell's TLS-inspection proxy interrupts the SSO browser flow during `awsAuthRefresh`, **drop the `awsAuthRefresh` line and run `aws sso login --profile <pete-cornell-bedrock-profile>` manually** before launching `claude` ([source: Bedrock docs, "Authentication loop with SSO and corporate proxies"](https://code.claude.com/docs/en/amazon-bedrock)).
+
+For MCP server transport format, Pete's existing mcp-searxng server is FastMCP / Streamable HTTP per his workspace conventions; the `http` transport above is the right one for that. For STDIO-based MCP servers (Brave, Tavily, etc., when run via `npx` locally), use:
+
+```json
+"mcpServers": {
+  "brave-search": {
+    "command": "npx",
+    "args": ["-y", "@brave/brave-search-mcp-server"],
+    "env": { "BRAVE_API_KEY": "<key>" }
+  }
+}
+```
+
+Per Claude Code's MCP docs: "When configuring MCP servers via JSON in `.mcp.json`, `~/.claude.json`, or `claude mcp add-json`, the type field accepts `streamable-http` as an alias for `http`. The MCP specification uses the name `streamable-http` for this transport, so configurations copied from server documentation work without modification." ([source](https://code.claude.com/docs/en/mcp))
+
+**Custom skills** require no configuration. Drop a `SKILL.md` (with `name` and `description` YAML frontmatter) under `~/.claude/skills/<name>/SKILL.md` and it's available immediately. To install the official Anthropic example skills:
+
+```
+/plugin marketplace add anthropics/skills
+/plugin install example-skills@anthropic-agent-skills
+```
+
+Per the anthropics/skills repo ([source](https://github.com/anthropics/skills)). Note: skills that depend on Anthropic-hosted features (Files API, hosted code execution) may fail when triggered on Bedrock; skills that are pure bash + filesystem operations work fine.
+
+#### 8.4 Desktop Code tab vs CLI: per-feature matrix
+
+A single table to settle the surface question for each feature, for Pete's stack (Bedrock backend, IdC SSO, Cornell AI Gateway optional):
+
+| Feature | Desktop Code tab (3P/Bedrock mode) | Claude Code CLI on Bedrock |
+|---|---|---|
+| Custom skills (`~/.claude/skills/<n>/SKILL.md`) | Unverifiable (tab broken, see Section 3) | **Yes** ([source](https://code.claude.com/docs/en/skills)) |
+| Bundled skills (`/code-review`, `/debug`, `/loop`, `/run`, `/verify`) | Unverifiable | **Yes** ([source](https://code.claude.com/docs/en/skills)) |
+| Anthropic pre-built skills (pdf, xlsx, docx, pptx) | Not via Skills Marketplace ([source](https://aws.amazon.com/blogs/machine-learning/from-developer-desks-to-the-whole-organization-running-claude-cowork-in-amazon-bedrock/)) | Skills install but runtime requires hosted code-execution which Bedrock lacks; **No** for the document-skills as designed ([source](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview)) |
+| `/plugin marketplace add anthropics/skills` | Unverifiable | **Yes** (install succeeds; individual skill runtime success varies, see above) ([source](https://github.com/anthropics/skills)) |
+| MCP servers (searxng, Brave, Tavily, Exa) | Unverifiable | **Yes** ([source](https://code.claude.com/docs/en/mcp)) |
+| Anthropic `web_search` server tool (the one used by Claude Code's built-in WebSearch) | Not on Bedrock ([source](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool)) | **No**; Claude Code hides WebSearch when configured for Bedrock ([source](https://mikhail.io/2025/10/claude-code-web-tools/)) |
+| Anthropic `web_fetch` server tool | Not on Bedrock ([source](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool)) | **No** as a server tool |
+| Claude Code built-in `WebFetch` (client-side, calls Haiku to summarize) | Unverifiable | Likely **Yes** (Medium confidence; client-side fetch + Haiku summarization is independent of the configured backend model, though the Haiku call still goes to Anthropic's API) |
+| Hooks, subagents, custom commands | Unverifiable | **Yes** (all client-side) |
+| Skills Marketplace (Desktop UI for browsing/installing community skills) | **No** on Cowork-on-Bedrock; "not included because Claude Cowork routes model inference exclusively through Amazon Bedrock" ([source](https://aws.amazon.com/blogs/machine-learning/from-developer-desks-to-the-whole-organization-running-claude-cowork-in-amazon-bedrock/)) | N/A (CLI uses the plugin marketplace, which is different) |
+| Computer Use | **No** on Cowork-on-Bedrock ([source: same](https://aws.amazon.com/blogs/machine-learning/from-developer-desks-to-the-whole-organization-running-claude-cowork-in-amazon-bedrock/)) | **No** on Bedrock |
+
+"Unverifiable" above means: the Code tab is broken in this configuration ([Section 3](#3-the-four-known-failure-modes-that-all-present-as-spinning-code-tab)), so feature availability inside the tab can't be tested, and the official docs don't enumerate it.
+
+#### 8.5 The "third option": Mantle and full-bridge gateways
+
+Two architectural patterns recently shipped that bridge the Bedrock feature gap. Pete doesn't need either today, but they're worth knowing about as the "what if I want Anthropic-direct features without giving up AWS billing" path.
+
+**Mantle (Anthropic-shape over Bedrock auth).** Anthropic and AWS jointly shipped a Bedrock endpoint that serves Claude models through the native Anthropic API shape rather than the Bedrock Invoke API. From the Claude Code Bedrock docs:
+
+> "Mantle is an Amazon Bedrock endpoint that serves Claude models through the native Anthropic API shape rather than the Bedrock Invoke API. It uses the same AWS credentials, IAM permissions, and `awsAuthRefresh` configuration described earlier on this page." ([source](https://code.claude.com/docs/en/amazon-bedrock))
+
+Set `CLAUDE_CODE_USE_MANTLE=1` and the CLI talks to `bedrock-mantle.{region}.api.aws/anthropic/v1/messages` ([source](https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock)). The key thing for Pete's question: **Mantle uses the Anthropic Messages shape, which means it could in principle support server-side tools that the Bedrock Invoke API doesn't accept**. As of the date of this report, I did not find an explicit statement that Mantle has shipped `web_search` support, but the architecture removes the wire-format objection. The Bedrock docs mention Mantle without enumerating per-tool support; per-model availability also differs from the standard Bedrock catalog ([source](https://code.claude.com/docs/en/amazon-bedrock)). **(Confidence: Low on Mantle web_search support specifically; this would need a direct probe or a future Anthropic doc update.)** Mantle requires Claude Code v2.1.94 or later.
+
+**Full-bridge gateways (LiteLLM, CCAG, Bedrock Access Gateway).** Three different community/Anthropic-adjacent projects translate between Anthropic Messages format and Bedrock InvokeModel, often adding `web_search` interception by routing through a third-party search provider:
+
+- **LiteLLM** has a `websearch_interception` callback that detects Claude Code's `web_search` tool requests, executes them via Perplexity/Tavily/SearXNG/etc., and returns results in Anthropic format before the request ever reaches Bedrock ([source](https://docs.litellm.ai/docs/tutorials/claude_code_websearch)). The implementation has been buggy: an open issue ([#26252](https://github.com/BerriAI/litellm/issues/26252)) confirms that as of v1.83.7-stable the interception doesn't fire for Claude Code's exact `web_search_20250305` request shape when routed via Bedrock pass-through, and a pending PR has a "native provider skip" that would re-break it. The intent is right; verify the current state if Pete adopts this path.
+
+- **CCAG (Claude Code AWS Gateway)** is purpose-built for this scenario: "When Claude Code connects to Bedrock directly (`CLAUDE_CODE_USE_BEDROCK=1`), it operates in a reduced-capability mode — extended thinking, web search, and some tool use features are disabled on the client side. CCAG presents as the Anthropic Messages API, so Claude Code enables its full feature set while inference still runs through your AWS account... Web search interception with per-user configurable providers (DuckDuckGo, Tavily, Serper, or custom)" ([source](https://github.com/antkawam/claude-code-aws-gateway)). Self-hosted Rust gateway, Docker-deployable, OIDC SSO, team budgets — overkill for Pete personally but exactly what Cornell IT would want if they were standardizing Cornell-wide.
+
+- The **bedrock-access-gateway** (AWS Samples) is the simplest of the three but does not implement Anthropic Messages API (only OpenAI Chat Completions), so it's wrong for Claude Code ([source](https://dev.to/aws-builders/bedrock-for-ai-coding-tools-mantle-vs-gateway-vs-litellm-a-decision-guide-for-aws-credit-burners-1h01)).
+
+For Pete's personal stack, none of this is necessary. The **searxng MCP** is the minimal, supported, already-in-his-stack answer to "I need web search on Claude Code over Bedrock." Mantle and CCAG are escalation paths if Cornell ever decides to formalize Anthropic-feature-parity for Bedrock-backed developers.
+
 ## Confidence Assessment
 
 | Claim | Confidence | Why |
@@ -327,6 +499,15 @@ What works and what doesn't in Claude Desktop when configured for third-party AP
 | Claude Desktop's surfaces speak Anthropic Messages with a Bearer token, not native SigV4 | **High** | Implied by the gateway requirements page (lists Anthropic Messages format as the primary supported gateway protocol, with Bedrock InvokeModel as a separate alternative that gateways may also expose) and by the fact that `CLAUDE_CODE_SKIP_BEDROCK_AUTH=1` exists as a documented setting for "If gateway handles AWS auth" scenarios ([source: LLM gateway docs](https://code.claude.com/docs/en/llm-gateway), [source: third-party integrations](https://code.claude.com/docs/en/third-party-integrations)). |
 | Bedrock API keys (`AWS_BEARER_TOKEN_BEDROCK`) bypass SigV4 for long-term keys | **High** | Per AWS ML blog on Bedrock API keys: "Short-term API keys use AWS Signature Version 4 for authentication" implies long-term don't; the Anthropic Bedrock docs list it as an alternative auth method with simpler bearer-token semantics ([source: AWS ML blog](https://aws.amazon.com/blogs/machine-learning/accelerate-ai-development-with-amazon-bedrock-api-keys/), [source: Anthropic Bedrock docs](https://code.claude.com/docs/en/amazon-bedrock)). |
 | Anthropic has no documented managed-policy key to hide/show the Code tab in 3P mode that would resolve Pete's issue | **Low** | Could not find one in the documented enterprise-configuration policy list. `isClaudeCodeForDesktopEnabled` exists as an enable/disable for the whole Code tab feature, but no per-mode gating. The Desktop docs list `permissions.disableBypassPermissionsMode`, `disableAutoMode`, `autoMode`, `sshConfigs`, `sshHostAllowlist`, `managedMcpServers` as the supported keys ([source](https://code.claude.com/docs/en/desktop)). None of those address 3P-mode tab visibility. |
+| Custom skills (filesystem `SKILL.md`) work on Claude Code CLI when Bedrock is the model provider | **High** | Anthropic docs are explicit: "Custom Skills in Claude Code are filesystem-based and don't require API uploads" ([source](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview)). Architecture: skill content is inlined into the system prompt client-side; the model provider is transparent. Independent corroboration in Gunnar Grosch's AWS-development series ([source](https://dev.to/gunnargrosch/extending-claude-code-with-plugins-and-skills-for-aws-development-4p9o)) and Haowen Huang's Bedrock walkthrough ([source](https://dev.to/haowen_huang/running-claude-agent-sdk-with-skills-on-amazon-bedrock-el6)). |
+| Anthropic pre-built skills requiring hosted code-execution (`pdf`, `xlsx`, `docx`, `pptx`) do NOT work on Bedrock | **High** | "Pre-built Agent Skills are available on claude.ai, the Claude API, Claude Platform on AWS, and Microsoft Foundry" ([source](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview)) — Bedrock omitted. Mechanism: pre-built skills require `code-execution-2025-08-25` and `files-api-2025-04-14` beta headers, which Bedrock doesn't expose. |
+| Anthropic's `web_search` server tool is NOT available on Amazon Bedrock | **High** | Direct from Anthropic docs: "Web search is not available on Amazon Bedrock" ([source](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool)). AWS re:Post official answer confirms the same ([source](https://repost.aws/questions/QUSd3wAByQTtyzUPzgqss3TQ/web-search-for-anthropic-models-in-bedrock)) including the exact ValidationException error from Bedrock Converse. Multiple operator posts reproduce ([source](https://www.tech-reader.blog/2025/05/solve-validationexception-websearch-not.html)). |
+| Anthropic's `web_fetch` server tool is NOT available on Amazon Bedrock | **High** | "It is not currently available on Amazon Bedrock or Vertex AI" ([source](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool)). |
+| Claude Code's built-in `WebSearch` tool is silently hidden when configured for Bedrock | **High** | Runtime reverse-engineering: "If Claude Code is configured to use those platforms [Bedrock/Vertex], Claude Code hides the `WebSearch` tool entirely" ([source](https://mikhail.io/2025/10/claude-code-web-tools/)). Corroborated by bug reports [#11369](https://github.com/anthropics/claude-code/issues/11369) (closed as inactive without fix) and the duplicate [#32385](https://github.com/anthropics/claude-code/issues/32385). Multiple users in #11369 confirm the same on Bedrock and LiteLLM-to-Bedrock paths. |
+| Claude Code's built-in `WebFetch` tool works on Bedrock (client-side HTTP + Haiku summarization) | **Medium** | Architectural inference from runtime analysis ([source](https://mikhail.io/2025/10/claude-code-web-tools/)): the fetch is client-side and the summarization is a separate Haiku call. Not contradicted by any source. Not explicitly confirmed in Anthropic docs. Pete should verify with a single test invocation in his first Bedrock CLI session. |
+| MCP servers (including searxng) are model-provider-agnostic and work on Bedrock | **High** | MCP servers run client-side, expose tools to Claude as ordinary tool-use blocks. No provider-side dependency. Confirmed in many community walkthroughs ([source](https://dev.to/gunnargrosch/extending-claude-code-with-plugins-and-skills-for-aws-development-4p9o)), in Anthropic's MCP docs ([source](https://code.claude.com/docs/en/mcp)), and in the Haowen Huang Bedrock-SDK confirmation that "MCP servers (Notion, etc.)" work unchanged ([source](https://dev.to/haowen_huang/running-claude-agent-sdk-with-skills-on-amazon-bedrock-el6)). |
+| `/plugin marketplace add anthropics/skills` install path works on Bedrock CLI | **Medium-High** | Architecture: the marketplace install is a filesystem operation that places skill folders under the CLI's local plugin directory; runtime success depends on each skill's specific dependencies, but the install command itself doesn't touch the model provider. No source directly states this for Bedrock, but no source contradicts it; the anthropics/skills repo documents the install command without provider caveats ([source](https://github.com/anthropics/skills)). |
+| Mantle endpoint may unlock some Anthropic-direct tools on Bedrock | **Low** | Mantle uses Anthropic Messages shape over Bedrock auth ([source](https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock)), which removes the wire-format objection that blocks `web_search` on Bedrock Invoke. But Anthropic has not explicitly listed `web_search` as supported on Mantle. Model lineup also differs from standard Bedrock catalog. Not a current recommendation; Pete should not pursue this unless Cornell formally adopts Mantle. |
 
 ## Open Questions
 
@@ -337,6 +518,9 @@ These remain unresolved after this research pass and would need either Pete to p
 - **Is the Cornell AI Gateway configured in Pete's Desktop app via Settings → 3P API, or via the Developer Mode "Configure third-party inference" panel?** Different code paths, different bug classes.
 - **Did Cornell push the AWS Cowork-on-Bedrock managed config via Jamf, or is the 3P deployment a Cornell-specific gateway config that doesn't match the AWS-blessed pattern?** Cornell using the AWS pattern would unlock the documented Code-tab-in-Cowork-mode path. Cornell using their own gateway pattern leaves Pete in the un-officially-supported zone.
 - **Has Anthropic privately documented `isCodeTabEnabledFor3PMode` or similar policy keys for enterprise admins?** Pete's [#59407](https://github.com/anthropics/claude-code/issues/59407) asks the public question; the public docs don't list one. Possibly available via Anthropic's enterprise support channel only.
+- **Does Claude Code's built-in `WebFetch` tool fire on a Bedrock-backed session?** Architectural inference says yes (it's a client-side fetch + a separate Haiku-API summarization call); not explicitly documented. Pete should run a single test invocation against a known URL on his first Bedrock CLI session and report back.
+- **Does the Mantle endpoint expose Anthropic's `web_search` server tool?** Mantle removes the wire-format objection (it speaks Anthropic Messages), but Anthropic hasn't published a per-tool support matrix for Mantle. A direct probe with `CLAUDE_CODE_USE_MANTLE=1` and a `web_search` request would settle this.
+- **Which exact Anthropic pre-built skills in the `anthropics/skills` repo are pure-bash (and therefore work via marketplace install on Bedrock) vs require hosted code execution (and therefore fail at runtime)?** The repo doesn't tag them. The `pdf`/`xlsx`/`docx`/`pptx` document-skills almost certainly need hosted code execution; the example-skills and creative skills probably don't. Pete could test by installing `example-skills@anthropic-agent-skills` and probing.
 
 ## Sources
 
@@ -370,8 +554,38 @@ These remain unresolved after this research pass and would need either Pete to p
 - [Elevata: What requirements need to be ready for Claude Code on Bedrock?](https://elevata.io/en/claude-code-on-bedrock) — Research-Preview / 3P / Code-tab validation list. Source of "validate availability, MDM, credentials, egress, local files, plugins, MCP, observability, and the Code tab separately for any team pilot."
 - [DEV.to (Haowen Huang): Running Claude Code and Claude Desktop on Amazon Bedrock](https://dev.to/haowen_huang/running-claude-code-and-claude-desktop-on-amazon-bedrock-1ed2) — community walkthrough; useful for CLI setup pattern, less authoritative on Desktop-side.
 
+### Skills, web search, and Bedrock parity (added 2026-05-27 5:38 PM ET)
+
+Sources for [Section 8](#8-adding-skills-and-web-search-on-bedrock-the-cli-recipe).
+
+- [Anthropic Agent Skills overview](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview) — primary source on Custom vs pre-built skills, surface support matrix (claude.ai / Claude API / Claude Platform on AWS / Microsoft Foundry — note Bedrock-direct is NOT on this list for pre-built), Skills API beta headers, and progressive disclosure architecture.
+- [Anthropic Skills in Claude Code](https://code.claude.com/docs/en/skills) — primary source on filesystem-based custom skills, bundled skills (`/code-review`, `/debug`, `/loop`, `/run`, `/verify`), SKILL.md frontmatter reference, and skill discovery rules.
+- [Anthropic web search tool docs](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool) — verbatim "Web search is not available on Amazon Bedrock."
+- [Anthropic web fetch tool docs](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool) — verbatim "It is not currently available on Amazon Bedrock or Vertex AI."
+- [Claude in Amazon Bedrock (Anthropic docs)](https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock) — current Bedrock + Mantle endpoint architecture, auth paths (Bedrock service role / IAM role / Bedrock API key), model IDs, regions.
+- [Claude Code on Amazon Bedrock](https://code.claude.com/docs/en/amazon-bedrock) — `CLAUDE_CODE_USE_MANTLE` env var, Mantle endpoint behavior, SSO loop workaround, region/model considerations.
+- [Mikhail Shilkov: Inside Claude Code's Web Tools: WebFetch vs WebSearch](https://mikhail.io/2025/10/claude-code-web-tools/) — runtime reverse-engineering. Source of "Claude Code hides the `WebSearch` tool entirely" on Bedrock/Vertex; also documents WebFetch's domain-allow-list + Haiku-summarize architecture.
+- [AWS re:Post: Web Search for Anthropic Models in Bedrock](https://repost.aws/questions/QUSd3wAByQTtyzUPzgqss3TQ/web-search-for-anthropic-models-in-bedrock) — AWS Official answer confirming `web_search` is not on Bedrock; exact ValidationException error from reproducer.
+- [Tech-Reader: Solve ValidationException web_search Not Supported in Bedrock Claude Tool Calls](https://www.tech-reader.blog/2025/05/solve-validationexception-websearch-not.html) — operator-level confirmation of Bedrock blocking `web_search_20250305` and `code_execution_20250305`.
+- [anthropics/skills GitHub repo](https://github.com/anthropics/skills) — Anthropic-hosted Agent Skills marketplace; `/plugin marketplace add anthropics/skills` install path; document-skills (`docx`, `pdf`, `pptx`, `xlsx`) and example-skills.
+- [Gunnar Grosch (DEV.to): Extending Claude Code with Plugins and Skills for AWS Development](https://dev.to/gunnargrosch/extending-claude-code-with-plugins-and-skills-for-aws-development-4p9o) — primary operator-side confirmation that custom skills, plugins, MCP servers, hooks, agents all work on Bedrock-backed Claude Code, with worked examples (deploy, security-review, public-api-standards) and frontmatter reference.
+- [Haowen Huang (DEV.to): Running Claude Agent SDK with Skills on Amazon Bedrock](https://dev.to/haowen_huang/running-claude-agent-sdk-with-skills-on-amazon-bedrock-el6) — independent confirmation: "Everything from the original SDK works: Skills, Subagents with parallel execution, MCP servers (Notion, etc.), All built-in tools (WebSearch, Bash, Write, etc.)."
+- [LiteLLM: Claude Code WebSearch Across All Providers](https://docs.litellm.ai/docs/tutorials/claude_code_websearch) — LiteLLM's `websearch_interception` feature for translating Claude Code's `web_search` requests to Perplexity/Tavily/SearXNG/etc. before they hit Bedrock.
+- [LiteLLM Issue #26252: websearch_interception does not fire for Claude Code + Bedrock pass-through](https://github.com/BerriAI/litellm/issues/26252) — open bug confirming the LiteLLM bridge has shipped buggy and is mid-fix. Independent confirmation that Bedrock cannot handle `web_search_20250305` on any API path: "tools.0: Input tag 'web_search_20250305' found using 'type' does not match any of the expected tags: 'bash_20250124', 'custom', 'text_editor_20250124'".
+- [antkawam/claude-code-aws-gateway (CCAG)](https://github.com/antkawam/claude-code-aws-gateway) — purpose-built self-hosted gateway. Source of the explicit quote: "When Claude Code connects to Bedrock directly (`CLAUDE_CODE_USE_BEDROCK=1`), it operates in a reduced-capability mode — extended thinking, web search, and some tool use features are disabled on the client side."
+- [DEV.to (Gabriel Koo): Bedrock for AI Coding Tools — Mantle vs Gateway vs LiteLLM](https://dev.to/aws-builders/bedrock-for-ai-coding-tools-mantle-vs-gateway-vs-litellm-a-decision-guide-for-aws-credit-burners-1h01) — best decision guide for the three full-bridge architectures.
+- [Claude Code MCP docs](https://code.claude.com/docs/en/mcp) — MCP server configuration; `streamable-http` as alias for `http` transport in `.mcp.json` / `~/.claude.json`.
+- [pete-builds/mcp-searxng](https://github.com/pete-builds/mcp-searxng) — Pete's own SearXNG MCP. The recommended web-search bridge for his Bedrock CLI setup.
+- [brave/brave-search-mcp-server](https://github.com/brave/brave-search-mcp-server) — official Brave Search MCP server. Alternative MCP option.
+- [Tavily MCP Server docs](https://docs.tavily.com/documentation/mcp) — Tavily's MCP integration. Alternative MCP option.
+- [Exa MCP](https://exa.ai/docs/reference/exa-mcp) — Exa's MCP integration. Alternative MCP option.
+- [Claude Code Issue #11369: web search not working (Did 0 searches in 7s)](https://github.com/anthropics/claude-code/issues/11369) — closed-as-inactive, but the comment thread documents the same WebSearch-on-Bedrock failure across multiple users (Bedrock direct, LiteLLM-to-Bedrock, Vertex, MiniMax) and a community-found explanation that the model vendor needs to provide an MCP replacement.
+- [Claude Code Issue #32385: WebSearch, Token Counting API unavailable on bedrock-connected billing accounts](https://github.com/anthropics/claude-code/issues/32385) — closed as duplicate of #11369 but useful as an explicit "WebSearch and Token Counting are Anthropic-direct-only" framing.
+
 ## Update History
 
+- **2026-05-27 5:54 PM ET**: Verify-pass cleanup before public publish. (a) Section 8.1 now directly addresses the apparent contradiction with the official Anthropic Bedrock page's "Features not supported: Agent infrastructure (Agent Skills, MCP connector, programmatic tool calling)" line — added a paragraph explaining that bullet refers to API-uploaded Skills via the Skills API + Files API + hosted code-execution container, not Claude Code CLI filesystem skills, which is why the two mechanisms have opposite Bedrock-compatibility outcomes despite sharing a name. (b) Section 8.2's `WebFetch` paragraph reworded to accurately reflect Mikhail Shilkov's source: the pipeline is Anthropic-backend-operated (`domain_info` endpoint + HTML-to-Markdown + Haiku 3.5 summarization), not "purely client-side" — the architectural reason WebFetch is not gated by the Bedrock setting is that its inference doesn't depend on the configured backend model, not that the fetch is local.
+- **2026-05-27 5:38 PM ET**: Appended [Section 8: Adding Skills and web search on Bedrock (the CLI recipe)](#8-adding-skills-and-web-search-on-bedrock-the-cli-recipe) in response to Pete's follow-up question on how to enable Agent Skills and web search once he falls back to the Claude Code CLI on Bedrock per Section 5 Option A. Findings: (1) **custom skills work natively** on Bedrock-backed Claude Code because they're filesystem + system-prompt; (2) the **plugin marketplace install path works**, but Anthropic's pre-built skills that depend on hosted code-execution / Files API do not run on Bedrock; (3) Anthropic's **`web_search` and `web_fetch` server tools are blocked** on Bedrock; (4) Claude Code's built-in `WebSearch` is therefore **silently hidden** on Bedrock-backed sessions (per Mikhail Shilkov's runtime analysis); (5) the recommended bridge is Pete's existing **`pete-builds/mcp-searxng`** server in his `~/.claude/settings.json` `mcpServers` block; (6) the per-feature matrix in Section 8.4 settles each capability for Desktop Code tab vs CLI on Bedrock; (7) the Mantle endpoint and full-bridge gateways (LiteLLM, CCAG) exist as escalation paths if Cornell ever wants Anthropic-feature-parity for Bedrock-backed developers, but are not needed for Pete personally. Confidence Assessment extended with nine new rows. Sources section gained a dedicated subsection ("Skills, web search, and Bedrock parity") with 19 new sources.
 - **2026-05-27 4:50 PM ET**: Fresh report after scrapping a prior wrong-scope research run that focused on the VS Code extension. The earlier draft is deleted. This report is scoped specifically to the **Claude Desktop app's Code tab** (not the VS Code extension, not the CLI) in **3P API mode pointing at AWS Bedrock** with **IdC SSO**. Primary new findings: (1) Anthropic explicitly documents that the Desktop Code tab does not support Bedrock; (2) Pete's own filed bug [#59407](https://github.com/anthropics/claude-code/issues/59407) is part of a documented class of Desktop-3P-mode tab-gating bugs; (3) the recommended path is Claude Code CLI on Bedrock, or routing the CLI through the Cornell AI Gateway in Anthropic-Messages mode.
 
 ## How This Report Was Generated
@@ -383,5 +597,6 @@ These remain unresolved after this research pass and would need either Pete to p
 - **Cross-validation**: Multiple sources independently confirm the central finding (Code tab doesn't support Bedrock-direct). Anthropic's own docs are the primary source. GitHub issues #35070, #61851, #59407, #56182, and #52526 each provide an independent angle on why the configuration breaks. AWS ML blog confirms what the AWS-blessed alternative includes and excludes. Elevata's operator guides corroborate the Cowork-vs-Code parity gap.
 - **What was deliberately excluded**: All findings from the previous (wrong-scope) report that focused on the VS Code extension's `bash -lic` PATH probe, the VS Code extension's config-probe 60s timeout, and any VS Code-extension-specific advice. Those were valid for that scope but irrelevant to Pete's actual question.
 - **Sources NOT fetched**: Reddit (Claude Code's WebFetch blocks www.reddit.com). Two Reddit threads (`r/ClaudeAI` "Can Claude Desktop chat/cowork/code be configured to route through a custom gateway to AWS Bedrock?" and "Claude Desktop App BedRock Integration") showed in search results but couldn't be read. Did not materially affect findings because the underlying questions are resolved by official Anthropic docs and GitHub-issue evidence.
-- **Timestamps**: System clock is UTC. Current ET verified via `TZ='America/New_York' date` → 2026-05-27 4:50 PM EDT (UTC-4). All timestamps in this report converted before labeling.
+- **Timestamps**: System clock is UTC. Current ET verified via `TZ='America/New_York' date` → 2026-05-27 4:50 PM EDT (UTC-4) for the original report, and 2026-05-27 5:38 PM EDT for the Section 8 append. All timestamps in this report converted before labeling.
+- **Section 8 research pass** (added 2026-05-27 5:38 PM ET): Same Research skill, Opus 4.7. Six SearXNG `search_deep` calls (Skills + Bedrock, web_search + Bedrock, WebSearch/WebFetch built-in tools, MCP server search, Mantle endpoint, bundled skills). Twelve `read_url` fetches of primary sources (Anthropic Agent Skills overview, Claude Code skills docs, web_search/web_fetch tool docs, Claude in Amazon Bedrock, Claude Code on Amazon Bedrock, Mikhail Shilkov runtime analysis, AWS re:Post, tech-reader operator post, anthropics/skills GitHub README, antkawam/claude-code-aws-gateway README, Gunnar Grosch DEV.to plugins/skills post, Haowen Huang DEV.to Bedrock-SDK post, LiteLLM Claude Code WebSearch tutorial, LiteLLM Issue #26252, Bedrock decision-guide post). Two GitHub issues fetched via `gh issue view`: #32385 and #11369. Anchored every Section 8 claim to a fetched-and-quoted source; flagged the WebFetch-on-Bedrock claim as Medium confidence because it's architectural inference, not explicit doc statement.
 - **Generated**: 2026-05-27, America/New_York timezone.
