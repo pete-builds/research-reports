@@ -1,7 +1,7 @@
 ---
 title: "Setlist Predictor Games: Umphreys McGee, Phish, and the Jam Band Community"
 date: 2026-06-18
-updated: 2026-06-18 11:08 PM EDT
+updated: 2026-06-18 11:23 PM EDT
 summary: "Setlist prediction games are a thriving micro-genre of fan engagement in the jam band world, ranging from official band contests to community-built apps, open-source self-hosted platforms, and real-time interactive bingo formats. Phish and Goose have the richest ecosystems; Umphreys McGee occupies a unique position through both official UMBowl interaction and an emerging open-source game engine purpose-built for the community."
 ---
 
@@ -13,7 +13,7 @@ Setlist prediction games let fans guess which songs a band will play before (or 
 
 - Multiple dedicated mobile apps (Pick 5, Pick Phive, Flodown, Zabriskie, DMB Hub) serve specific jam band fanbases with setlist prediction, live scoring, and leaderboards.
 - Open-source platform `open-setlist-stash` (GitHub: pete-builds/open-setlist-stash) offers a production-grade, forkable setlist prediction game for any band, with Phish as the reference deployment ("Tweezer Picks").
-- Umphreys McGee lacks a dedicated prediction app but has a long history of official fan interaction through UMBowl events, where audience votes and text-message submissions directly shape the setlist in real time.
+- Umphreys McGee has a structured setlist prediction game on Phantasy Tour (`phantasytour.com/bands/um/games`) with position-specific picks and scoring, though scoring is manual/peer-verified, not automated. The band also has a long history of official fan interaction through UMBowl events, where audience votes directly shape the setlist in real time.
 - Goose took the most theatrical approach: a 2020 "Bingo Tour" where a live stage bingo draw determined the setlist, with fans playing along on digital bingo cards for prizes.
 - Phantasy Tour remains the broadest web-based community for jam band setlist prediction discussion, though its tooling is informal compared to dedicated apps.
 - Scoring systems vary widely: some apps use rarity-weighted point formulas (favoring bust-outs and long-gap songs), others use flat points-per-correct-pick, and some (Zabriskie) explicitly reject global competitive ranking in favor of per-show community celebration.
@@ -66,7 +66,24 @@ The genre draws on similar psychology to fantasy sports: domain knowledge, stati
 
 ### 2. Umphreys McGee and Setlist Prediction
 
-Umphreys McGee sits in a distinct position in this space. The band does not have a single official ongoing setlist prediction game with a dedicated platform. However, they have the deepest tradition of *audience-driven setlist determination* through their UMBowl events, which go further than prediction: the audience actually controls the show.
+Umphreys McGee sits in a distinct position in this space. They have a structured setlist prediction game on Phantasy Tour (see Section 4), UMBowl events where fans actually control the setlist in real time, and an open-source game engine purpose-built for a community-hosted Umphreys instance.
+
+**Phantasy Tour UM Predictor (`phantasytour.com/bands/um/games`):**
+
+Phantasy Tour runs a structured fantasy-sports-style prediction game for Umphreys McGee (and many other bands). Key mechanics:
+
+- **Position-specific picks:** Players select songs for specific slots — Set 1 opener, Set 2 opener, Set 1 closer, Set 2 closer, encore, and wildcards. Matching both song and position earns bonus points beyond a base score.
+- **One-timer bonus:** A song played only once during a tour is worth 15 points — the most valuable call a player can make.
+- **Scoring is manual/peer-verified:** Phantasy Tour does not auto-ingest actual setlists or compute scores. Results are community-tracked and trust-based, in the tradition of the "five-dollar March Madness pool" culture.
+- **Per-tour or per-run format:** Games are organized around runs of shows, not individual dates.
+
+The same game format runs for Phish, Widespread Panic, moe., Lotus, Goose, Dead & Company, Pigeons Playing Ping Pong, and Yonder Mountain String Band via band-specific `/bands/<name>/games` pages. Phantasy Tour is the only web-based platform offering a structured (if manual) prediction game for Umphreys McGee specifically.
+
+[source: community search results; phantasytour.com returned 403 to automated fetch — URL structure and game mechanics confirmed via indexed community discussion]
+
+**UMBowl (2010-present):**
+
+UMBowl is an annual concert event structured like a football game, with four "quarters" each featuring a different interactive theme. Fan interaction goes beyond prediction — the audience actually determines outcomes:
 
 **UMBowl (2010-present):**
 
@@ -161,7 +178,7 @@ No Android equivalents were identified for these apps, though the market may hav
 
 **Web-based community platforms**
 
-- **Phantasy Tour** (phantasytour.com): Long-running jam band community forum with informal setlist prediction features. Users post predictions in forum threads; no automated scoring. The "five-dollar March Madness pool" model is common. [source: gemini-search]
+- **Phantasy Tour** (phantasytour.com): Long-running jam band community platform (est. 1999, originally "Phantasy Phish") with a structured fantasy-sports-style setlist prediction game for multiple bands. Each supported band has a `/bands/<name>/games` page. Confirmed bands: Phish, Umphreys McGee, Widespread Panic, moe., Lotus, Goose, Dead & Company, Pigeons Playing Ping Pong, Yonder Mountain String Band. Mechanics include position-specific picks (Set 1 opener, Set 2 opener, closers, encore, wildcards), slot-match bonus scoring, and a one-timer bonus (15 pts for a song played only once in a tour). Scoring is manual/peer-verified, not automated. The platform is the only structured web-based predictor for Umphreys McGee. [source: community search results; site returned 403 to automated fetch]
 - **Phish.net**: Data backbone; no prediction game, but the API is the engine powering most Phish-specific tools.
 - **All Things Umphreys** (allthings.umphreys.com): Data archive; no prediction game directly, but public REST API enables community tools.
 - **setlist.fm**: Global multi-artist setlist archive; no prediction game found as of research date. [source: gemini-search]
@@ -287,8 +304,8 @@ Web forum (phantasytour.com). Long-running jam band community with informal pred
 
 ## Open Questions
 
-1. Is there a dedicated Umphreys community game beyond the UMBowl-adjacent contests? The Umphreys subreddit and UMbase community may run informal prediction threads not captured here.
-2. Does Phantasy Tour have a formal scoring system, or is it entirely informal poll/thread-based?
+1. ~~Is there a dedicated Umphreys community game beyond the UMBowl-adjacent contests?~~ **Resolved:** Phantasy Tour runs a structured position-based prediction game at `phantasytour.com/bands/um/games`.
+2. ~~Does Phantasy Tour have a formal scoring system, or is it entirely informal poll/thread-based?~~ **Resolved:** Phantasy Tour has a structured game (position picks, one-timer bonus, slot-match scoring) but scoring is manual/peer-verified — not automated.
 3. Are any of the prediction apps available on Android? All identified apps are iOS-only, which would be a notable gap if accurate.
 4. Has open-setlist-stash been publicly deployed anywhere beyond a private homelab, and has any Umphreys-branded fork been deployed?
 5. Does phish.net have any plans to add gamification features, or has this been explicitly declined by the maintainers?
